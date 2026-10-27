@@ -45,3 +45,4 @@ htmlcov/
 *.db
 *.sqlite3
 .tael/
+*.vsix

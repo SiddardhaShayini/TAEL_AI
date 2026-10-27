@@ -19,7 +19,11 @@ if ($Clean) {
 
 # Ensure PyInstaller is installed in virtualenv
 Write-Host "Checking for pyinstaller in virtual environment..." -ForegroundColor Green
-& ".\.venv\Scripts\python.exe" -m pip install --quiet pyinstaller
+if (Get-Command uv -ErrorAction SilentlyContinue) {
+    & uv pip install --quiet pyinstaller
+} else {
+    & ".\.venv\Scripts\python.exe" -m pip install --quiet pyinstaller
+}
 
 Write-Host "Compiling standalone binary via packaging\tael.spec..." -ForegroundColor Green
 & ".\.venv\Scripts\pyinstaller.exe" "packaging\tael.spec" --noconfirm

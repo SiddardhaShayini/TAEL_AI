@@ -47,8 +47,10 @@ TAEL is optimized to run **IBM Granite Code 3B** locally through **Ollama**:
 | Command | Description |
 | :--- | :--- |
 | `tael chat [PROMPT]` | Start an interactive coding session or run a single prompt |
+| `tael server [--port 7860]` | Launch local HTTP service and interactive Web Studio dashboard |
 | `tael status` | Show current RAM, CPU, active profile, and model backend status |
 | `tael doctor` | Run full system security and diagnostic checks |
+| `tael eval [--category ...]` | Run automated evaluation benchmark suite |
 | `tael init` | Run the first-run hardware onboarding wizard |
 | `tael memory list` | View active project memory entries |
 | `tael memory search <query>` | Full-text search (FTS5) across project memory |
@@ -66,9 +68,20 @@ TAEL is optimized to run **IBM Granite Code 3B** locally through **Ollama**:
 tael chat "Create a small inventory app with offline storage and tests"
 ```
 
-### Checking Hardware & Active Resource Profile
+### Launching the Web Studio Dashboard
 ```bash
-tael status
+tael server
+```
+Open `http://127.0.0.1:7860` in your web browser.
+
+### Running System Health Diagnostics
+```bash
+tael doctor
+```
+
+### Running the Evaluation Benchmark Suite
+```bash
+tael eval --export BENCHMARK_REPORT.md
 ```
 
 ### Researching Technical Libraries
@@ -83,7 +96,28 @@ tael profile "python -c 'sum(x**2 for x in range(1000000))'"
 
 ---
 
-## 5. Security & Privacy
+## 5. VS Code Extension Installation
+
+1. Package the extension:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\scripts\package_vscode.ps1
+   ```
+2. In VS Code, open Extensions (`Ctrl+Shift+X`), click `...` -> **Install from VSIX...**, and choose `extensions/vscode/tael-ai-3.0.0.vsix`.
+3. Press `Ctrl+Shift+P` -> **TAEL AI: Open Web Studio** to open the assistant beside your editor.
+
+---
+
+## 6. Standalone Executable Packaging
+
+To build a standalone Windows binary (`dist/tael.exe`) that runs on computers without Python:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\build_standalone.ps1
+```
+
+---
+
+## 7. Security & Privacy
 
 - **Local Inference:** Your code and prompts stay on your machine.
 - **Approval Gates:** File writes, shell commands, and application launches require explicit user confirmation.

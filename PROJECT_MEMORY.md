@@ -254,3 +254,23 @@ This file is development continuity for the people and agents building TAEL V3. 
     - Localized extension logo and added Git repository metadata in `extensions/vscode/package.json`.
 - Validation: 30/30 unit & integration tests passed in 2.78s. `tael doctor` passed all 6 checks with live local model.
 - Next step: stage, commit, and push these updates to GitHub `origin/main`.
+
+
+### 2026-10-27 17:49 (+05:30)
+
+- Completed Phase 6 single-command packaging, standalone Windows compilation, and documentation refresh:
+  - VS Code Companion Extension packaging:
+    - Generated a pure-Python standard library 128x128 RGBA PNG icon in `extensions/vscode/assets/tael-logo.png` adhering to VS Code marketplace specifications.
+    - Updated `scripts/package_vscode.ps1` to target `@vscode/vsce@3.2.1` for Node 20 LTS compatibility.
+    - Added Apache 2.0 `LICENSE` to root repository and `extensions/vscode/LICENSE`.
+    - Successfully built `extensions/vscode/tael-ai-3.0.0.vsix` (8 files, 11.48 KB) with zero warnings.
+  - Standalone Windows Executable Compilation:
+    - Installed PyInstaller in `.venv` via `uv pip install pyinstaller`.
+    - Added CLI module entrypoint in `src/tael/cli/__main__.py`.
+    - Compiled standalone binary `dist/tael.exe` (19.06 MB) using `scripts/build_standalone.ps1`.
+    - Validated binary in isolated execution: `.\dist\tael.exe doctor` and `.\dist\tael.exe eval` ran natively and passed 8/8 evaluation cases (100.0%) in 6.37s.
+  - Documentation & Tracking Updates:
+    - Added `.vsix` to `.gitignore`.
+    - Extensively updated `README.md` and `docs/QUICKSTART.md` covering `tael eval`, `tael server` Web Studio, VS Code `.vsix` installation, and standalone compilation.
+- Validation: 30/30 unit & integration tests passing (`pytest`). `tael eval` 8/8 passing both in Python environment and compiled `dist/tael.exe`.
+- Next step: stage, commit, and push changes to GitHub `origin/main`.

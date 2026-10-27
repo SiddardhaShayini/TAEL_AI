@@ -10,7 +10,7 @@ $ExtensionDir = Join-Path $WorkspaceRoot "extensions\vscode"
 Set-Location $ExtensionDir
 
 Write-Host "Packaging extension from $ExtensionDir..." -ForegroundColor Green
-& npx --yes @vscode/vsce package --no-git-tag-version --allow-missing-repository
+& npx --yes @vscode/vsce@3.2.1 package --no-git-tag-version --allow-missing-repository
 
 $VsixFiles = Get-ChildItem -Filter "*.vsix"
 if ($VsixFiles) {
