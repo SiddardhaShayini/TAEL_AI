@@ -243,6 +243,20 @@ def cmd_eval(config: TaelConfig, category: Optional[str] = None, export_path: Op
         console.print(f"[green]Benchmark report exported to: {out_file}[/green]")
 
 
+def cmd_server(config: TaelConfig, host: str = "127.0.0.1", port: int = 7860) -> None:
+    import uvicorn
+    from tael.api.server import create_app
+    app = create_app(config)
+    console.print(Panel(
+        f"[bold green]Starting TAEL AI Local Service & Web Studio[/bold green]\n"
+        f"URL: [cyan]http://{host}:{port}[/cyan]\n"
+        f"Workspace: [magenta]{config.workspace_root}[/magenta]\n"
+        f"Press [bold red]Ctrl+C[/bold red] to stop.",
+        border_style="green",
+    ))
+    uvicorn.run(app, host=host, port=port, log_level="info")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="tael", description="TAEL V3: Local-First AI Creation & Research Assistant")
     parser.add_argument("--version", action="version", version=f"tael {__version__}")
@@ -284,6 +298,11 @@ def main() -> None:
     eval_parser.add_argument("--category", "-c", help="Filter by category (safety, tool_reliability, memory_efficiency, resource_bounds)")
     eval_parser.add_argument("--export", "-e", help="Export report to Markdown or JSON file path")
 
+    # tael server
+    server_parser = subparsers.add_parser("server", help="Launch local API service and Web Studio dashboard")
+    server_parser.add_argument("--host", default="127.0.0.1", help="Loopback host address (default: 127.0.0.1)")
+    server_parser.add_argument("--port", type=int, default=7860, help="Port to bind (default: 7860)")
+
     args = parser.parse_args()
 
     config = TaelConfig.load()
@@ -298,6 +317,8 @@ def main() -> None:
         cmd_init(config)
     elif args.command in ("eval", "benchmark"):
         cmd_eval(config, args.category, args.export)
+    elif args.command == "server":
+        cmd_server(config, args.host, args.port)
     elif args.command == "chat":
         cmd_chat(config, args.prompt)
     elif args.command == "memory":

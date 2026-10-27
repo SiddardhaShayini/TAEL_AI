@@ -218,3 +218,21 @@ This file is development continuity for the people and agents building TAEL V3. 
   - Added unit test `tests/test_benchmark.py` testing the benchmark suite runner.
 - Validation: 27/27 unit tests passed in 2.11s. `tael eval` passed 8/8 benchmark cases.
 - Next step: commit and push evaluation suite and CI, then implement real-time streaming progress updates (SSE).
+
+
+### 2026-10-27 15:16 (+05:30)
+
+- Implemented real-time Server-Sent Events (SSE) streaming, `tael server` command, and official VS Code companion extension:
+  - SSE Streaming Endpoint in `src/tael/api/server.py`:
+    - Added `StreamingProgress` hook forwarding orchestrator progress events (`thought`, `tool_start`, `tool_end`, `pressure`, `done`) into a thread-safe queue.
+    - Added `POST /session/{session_id}/chat/stream` yielding `text/event-stream` SSE chunks.
+    - Upgraded root Web Studio (`GET /`) to consume the streaming endpoint via `ReadableStream` and render live interactive status pills for tool calls and thoughts in real time, with graceful fallback to standard JSON endpoint.
+  - CLI Server Command in `src/tael/cli/app.py`:
+    - Added `tael server` subcommand with `--host` and `--port` flags to spin up the local service and Web Studio with a single command.
+  - Official VS Code Extension in `extensions/vscode/`:
+    - `package.json`: Contributes 5 commands (`tael.openStudio`, `tael.chat`, `tael.doctor`, `tael.checkpoint`, `tael.rollback`), configuration options (`tael.serviceUrl`, `tael.authToken`), and editor title bar shortcuts.
+    - `extension.js`: Implements side-by-side webview embedding of Web Studio, modal checkpoint and rollback picker, and progress notifications.
+    - `README.md` and `.vscodeignore`: Clear setup and testing instructions.
+  - Tests updated in `tests/test_api.py`: verified both standard `/session/{id}/chat` and SSE streaming `/session/{id}/chat/stream`.
+- Validation: 27/27 tests pass in 1.79s. `tael doctor` passes all 5 system checks with mock runtime warning. `tael eval` passes 8/8 benchmark cases (100.0%) in 1.15s.
+- Next step: stage, commit, and push these enhancements to GitHub `origin/main`.

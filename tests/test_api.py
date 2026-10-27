@@ -76,3 +76,20 @@ async def test_api_endpoints(tmp_path: Path):
         res_chk_list = await client.get("/checkpoints")
         assert res_chk_list.status_code == 200
         assert len(res_chk_list.json()) >= 1
+
+        # 9. Session chat execution
+        res_session_2 = await client.post("/session", json={"workspace_root": str(tmp_path)})
+        s_id = res_session_2.json()["session_id"]
+        res_chat = await client.post(f"/session/{s_id}/chat", json={"prompt": "Hello assistant", "max_turns": 2})
+        assert res_chat.status_code == 200
+        assert "final_answer" in res_chat.json()
+
+        # 10. Session chat stream (SSE)
+        res_session_3 = await client.post("/session", json={"workspace_root": str(tmp_path)})
+        s_id3 = res_session_3.json()["session_id"]
+        res_stream = await client.post(f"/session/{s_id3}/chat/stream", json={"prompt": "Stream test", "max_turns": 2})
+        assert res_stream.status_code == 200
+        assert "text/event-stream" in res_stream.headers.get("content-type", "")
+        body_text = res_stream.text
+        assert "event: start" in body_text
+        assert "event: done" in body_text

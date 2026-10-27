@@ -1,12 +1,16 @@
+import asyncio
+import json
+import queue
+import threading
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, HTTPException, Header, Depends, Response
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, StreamingResponse
 from pydantic import BaseModel
 
 from tael import __version__
 from tael.config.settings import TaelConfig
-from tael.core.orchestrator import TaskOrchestrator
+from tael.core.orchestrator import OrchestratorProgress, TaskOrchestrator
 from tael.core.session import SessionState
 from tael.memory.models import MemoryCategory
 from tael.memory.store import MemoryStore
@@ -24,6 +28,25 @@ def get_logo_svg_path(workspace_root: str) -> Optional[Path]:
         if c.exists() and c.is_file():
             return c
     return None
+
+
+class StreamingProgress(OrchestratorProgress):
+    """Bridges orchestrator progress events into a thread-safe queue for SSE delivery."""
+
+    def __init__(self, event_queue: queue.Queue):
+        self.queue = event_queue
+
+    def on_thought(self, content: str) -> None:
+        self.queue.put({"event": "thought", "data": {"content": content}})
+
+    def on_tool_start(self, tool_name: str, args: Dict[str, Any]) -> None:
+        self.queue.put({"event": "tool_start", "data": {"tool": tool_name, "args": args}})
+
+    def on_tool_end(self, tool_name: str, result_summary: str, success: bool) -> None:
+        self.queue.put({"event": "tool_end", "data": {"tool": tool_name, "summary": result_summary, "success": success}})
+
+    def on_pressure_warning(self, message: str) -> None:
+        self.queue.put({"event": "pressure", "data": {"message": message}})
 
 
 def create_app(config: Optional[TaelConfig] = None) -> FastAPI:
@@ -60,7 +83,6 @@ def create_app(config: Optional[TaelConfig] = None) -> FastAPI:
         snapshot = resource_monitor.sample()
         runtime = ModelRuntimeManager(cfg.model)
         ollama_ok = runtime.check_health()
-        installed = runtime.list_installed_models() if ollama_ok else []
         status_badge = '<span style="color:#2BB3A3;font-weight:bold;">ONLINE</span>' if ollama_ok else '<span style="color:#FFB547;font-weight:bold;">OFFLINE (Mock Mode)</span>'
         pressure_badge = '<span style="color:#ff6b6b;font-weight:bold;">YES</span>' if snapshot.is_under_pressure else '<span style="color:#2BB3A3;font-weight:bold;">NO</span>'
 
@@ -112,7 +134,7 @@ def create_app(config: Optional[TaelConfig] = None) -> FastAPI:
     .msg {{ margin-bottom: 14px; line-height: 1.5; }}
     .msg.user {{ color: #FFB547; font-weight: 600; }}
     .msg.assistant {{ color: #E8F1EE; background: #0F2A30; padding: 12px; border-radius: 8px; border-left: 3px solid #2BB3A3; }}
-    .tool-pill {{ display: inline-block; background: rgba(43,179,163,0.2); border: 1px solid #2BB3A3; color: #2BB3A3; font-size: 12px; padding: 3px 8px; border-radius: 4px; margin-top: 6px; }}
+    .tool-pill {{ display: inline-block; background: rgba(43,179,163,0.2); border: 1px solid #2BB3A3; color: #2BB3A3; font-size: 12px; padding: 3px 8px; border-radius: 4px; margin-top: 6px; margin-right: 4px; }}
     .input-row {{ display: flex; gap: 10px; }}
     textarea {{
       flex: 1; background: #08161A; border: 1px solid rgba(43,179,163,0.4); border-radius: 8px;
@@ -248,26 +270,83 @@ def create_app(config: Optional[TaelConfig] = None) -> FastAPI:
 
       const sessionId = await ensureSession();
       if (!sessionId) {{
-        history.innerHTML += `<div class="msg assistant" style="color:red;">Error initializing session.</div>`;
+        history.innerHTML += `<div class="msg assistant" style="color:#ff6b6b;">Error initializing session.</div>`;
         sendBtn.disabled = false;
         sendBtn.innerText = 'Run Task';
         return;
       }}
 
+      // Create streaming assistant message bubble
+      const msgDiv = document.createElement('div');
+      msgDiv.className = 'msg assistant';
+      history.appendChild(msgDiv);
+      history.scrollTop = history.scrollHeight;
+
       try {{
-        const res = await fetch(`/session/${{sessionId}}/chat`, {{
+        const response = await fetch(`/session/${{sessionId}}/chat/stream`, {{
           method: 'POST',
           headers: {{ 'Content-Type': 'application/json' }},
-          body: JSON.stringify({{ prompt: text, max_turns: 6 }})
+          body: JSON.stringify({{ prompt: text, max_turns: 8 }})
         }});
-        const result = await res.json();
-        let toolsHtml = '';
-        if (result.tools_executed && result.tools_executed.length > 0) {{
-          toolsHtml = '<br>' + result.tools_executed.map(t => `<span class="tool-pill">Tool: ${{t.tool}} (${{t.success ? 'Success' : 'Failed'}})</span>`).join(' ');
+
+        if (!response.ok || !response.body) {{
+          // Fallback to synchronous endpoint
+          const res = await fetch(`/session/${{sessionId}}/chat`, {{
+            method: 'POST',
+            headers: {{ 'Content-Type': 'application/json' }},
+            body: JSON.stringify({{ prompt: text, max_turns: 8 }})
+          }});
+          const result = await res.json();
+          let toolsHtml = '';
+          if (result.tools_executed && result.tools_executed.length > 0) {{
+            toolsHtml = '<br>' + result.tools_executed.map(t => `<span class="tool-pill">Tool: ${{t.tool}} (${{t.success ? 'Success' : 'Failed'}})</span>`).join(' ');
+          }}
+          msgDiv.innerHTML = `${{result.final_answer || 'Task completed.'}}${{toolsHtml}}`;
+          return;
         }}
-        history.innerHTML += `<div class="msg assistant">${{result.final_answer || 'Task completed.'}}${{toolsHtml}}</div>`;
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {{
+          const {{ done, value }} = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, {{ stream: true }});
+          const blocks = buffer.split('\\n\\n');
+          buffer = blocks.pop();
+
+          for (const block of blocks) {{
+            if (!block.trim()) continue;
+            let eventType = 'message';
+            let data = {{}};
+            for (const line of block.split('\\n')) {{
+              if (line.startsWith('event: ')) eventType = line.slice(7).trim();
+              if (line.startsWith('data: ')) {{
+                try {{ data = JSON.parse(line.slice(6)); }} catch(e) {{}}
+              }}
+            }}
+
+            if (eventType === 'tool_start') {{
+              msgDiv.innerHTML += `<div><span class="tool-pill">&#9881; Tool: <strong>${{data.tool}}</strong> running...</span></div>`;
+            }} else if (eventType === 'tool_end') {{
+              const color = data.success ? '#2BB3A3' : '#ff6b6b';
+              const sym = data.success ? '&#10003;' : '&#10007;';
+              msgDiv.innerHTML += `<div><span class="tool-pill" style="border-color:${{color}}; color:${{color}};">${{sym}} Tool: <strong>${{data.tool}}</strong> ${{data.success ? 'finished' : 'failed'}}</span></div>`;
+            }} else if (eventType === 'thought') {{
+              msgDiv.innerHTML += `<div>${{data.content.replace(/\\n/g, '<br>')}}</div>`;
+            }} else if (eventType === 'pressure') {{
+              msgDiv.innerHTML += `<div style="color:#FFB547; font-size:12px;">&#9888; ${{data.message}}</div>`;
+            }} else if (eventType === 'done') {{
+              if (data.final_answer && !msgDiv.innerText.includes(data.final_answer)) {{
+                msgDiv.innerHTML += `<div>${{data.final_answer.replace(/\\n/g, '<br>')}}</div>`;
+              }}
+            }}
+            history.scrollTop = history.scrollHeight;
+          }}
+        }}
       }} catch (err) {{
-        history.innerHTML += `<div class="msg assistant" style="color:red;">Execution failed: ${{err.message}}</div>`;
+        msgDiv.innerHTML += `<div style="color:#ff6b6b;">Execution failed: ${{err.message}}</div>`;
       }} finally {{
         sendBtn.disabled = false;
         sendBtn.innerText = 'Run Task';
@@ -362,6 +441,60 @@ def create_app(config: Optional[TaelConfig] = None) -> FastAPI:
             raise HTTPException(status_code=404, detail="Session not found")
         result = orchestrator.execute_task(req.prompt, session=session, max_turns=req.max_turns)
         return result
+
+    @app.post("/session/{session_id}/chat/stream", dependencies=[Depends(verify_auth)])
+    async def session_chat_stream(session_id: str, req: ChatRequest):
+        session = sessions.get(session_id)
+        if not session:
+            raise HTTPException(status_code=404, detail="Session not found")
+
+        event_queue: queue.Queue = queue.Queue()
+        progress = StreamingProgress(event_queue)
+
+        def run_task():
+            try:
+                res = orchestrator.execute_task(
+                    req.prompt,
+                    session=session,
+                    progress=progress,
+                    max_turns=req.max_turns,
+                )
+                event_queue.put({"event": "done", "data": res})
+            except Exception as e:
+                event_queue.put({"event": "error", "data": {"error": str(e)}})
+            finally:
+                event_queue.put(None)
+
+        worker = threading.Thread(target=run_task, daemon=True)
+        worker.start()
+
+        async def sse_generator():
+            yield f"event: start\ndata: {json.dumps({'session_id': session_id})}\n\n"
+            while True:
+                try:
+                    item = await asyncio.to_thread(event_queue.get, timeout=0.1)
+                except queue.Empty:
+                    if not worker.is_alive() and event_queue.empty():
+                        break
+                    await asyncio.sleep(0.02)
+                    continue
+
+                if item is None:
+                    break
+
+                ev = item.get("event", "message")
+                d_str = json.dumps(item.get("data", {}))
+                yield f"event: {ev}\ndata: {d_str}\n\n"
+
+        return StreamingResponse(
+            sse_generator(),
+            media_type="text/event-stream",
+            headers={
+                "Cache-Control": "no-cache",
+                "Connection": "keep-alive",
+                "X-Accel-Buffering": "no",
+            },
+        )
 
     @app.post("/session/{session_id}/cancel", dependencies=[Depends(verify_auth)])
     def cancel_session(session_id: str):

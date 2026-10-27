@@ -1,0 +1,97 @@
+{
+  "name": "tael-ai",
+  "displayName": "TAEL AI Companion",
+  "description": "Local-First AI Creation & Research Assistant for everyday laptops",
+  "version": "3.0.0",
+  "publisher": "tael-ai",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": [
+    "AI",
+    "Programming Languages",
+    "Education"
+  ],
+  "keywords": [
+    "tael",
+    "local-ai",
+    "coding-assistant",
+    "granite",
+    "aider",
+    "offline-ai"
+  ],
+  "main": "./extension.js",
+  "icon": "../../assets/tael-logo-v3.svg",
+  "activationEvents": [
+    "onCommand:tael.openStudio",
+    "onCommand:tael.chat",
+    "onCommand:tael.doctor",
+    "onCommand:tael.checkpoint",
+    "onCommand:tael.rollback"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "tael.openStudio",
+        "title": "Open TAEL Web Studio",
+        "category": "TAEL AI",
+        "icon": "$(layout-sidebar-right)"
+      },
+      {
+        "command": "tael.chat",
+        "title": "Ask TAEL / Run Task",
+        "category": "TAEL AI",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "tael.doctor",
+        "title": "Run System Doctor Diagnostics",
+        "category": "TAEL AI",
+        "icon": "$(checklist)"
+      },
+      {
+        "command": "tael.checkpoint",
+        "title": "Create Workspace Checkpoint",
+        "category": "TAEL AI",
+        "icon": "$(save)"
+      },
+      {
+        "command": "tael.rollback",
+        "title": "Rollback Workspace Checkpoint",
+        "category": "TAEL AI",
+        "icon": "$(history)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "tael.openStudio",
+          "group": "navigation",
+          "when": "editorIsOpen"
+        }
+      ],
+      "commandPalette": [
+        { "command": "tael.openStudio" },
+        { "command": "tael.chat" },
+        { "command": "tael.doctor" },
+        { "command": "tael.checkpoint" },
+        { "command": "tael.rollback" }
+      ]
+    },
+    "configuration": {
+      "title": "TAEL AI Assistant",
+      "properties": {
+        "tael.serviceUrl": {
+          "type": "string",
+          "default": "http://127.0.0.1:7860",
+          "description": "Local endpoint URL for the TAEL AI service."
+        },
+        "tael.authToken": {
+          "type": "string",
+          "default": "",
+          "description": "Optional Bearer authentication token for securing the local TAEL AI service."
+        }
+      }
+    }
+  }
+}
