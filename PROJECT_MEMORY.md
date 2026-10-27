@@ -236,3 +236,21 @@ This file is development continuity for the people and agents building TAEL V3. 
   - Tests updated in `tests/test_api.py`: verified both standard `/session/{id}/chat` and SSE streaming `/session/{id}/chat/stream`.
 - Validation: 27/27 tests pass in 1.79s. `tael doctor` passes all 5 system checks with mock runtime warning. `tael eval` passes 8/8 benchmark cases (100.0%) in 1.15s.
 - Next step: stage, commit, and push these enhancements to GitHub `origin/main`.
+
+
+### 2026-10-27 15:41 (+05:30)
+
+- Verified live local IBM Granite Code 3B model execution and completed coding subsystem tool integration:
+  - Discovered local Ollama instance on `127.0.0.1:11434` with `granite-code:3b` (3.5B parameters, Q4_0 quantization) pre-installed.
+  - Executed live `tael doctor`: all 6/6 system diagnostic checks passed (`PASS`), including Model Inference Backend online.
+  - Integrated `AiderCodingTool` in `src/tael/coding/tool.py` and registered it in `src/tael/tools/__init__.py`:
+    - Enables the agent orchestrator to delegate multi-file code editing and refactoring tasks directly to Aider with local model guidance.
+    - Provides graceful error handling and clear guidance when Aider is not yet installed on PATH.
+    - Total registered tools increased to 18 tools.
+  - Added unit test suite in `tests/test_aider.py` (3 tests verifying bridge availability, schema validation, and graceful fallback).
+  - Configured standalone packaging and distribution assets (Phase 6):
+    - PyInstaller specification in `packaging/tael.spec` bundling CLI, FastAPI service, defaults, and logo into a single Windows `.exe`.
+    - Automated packaging scripts: `scripts/build_standalone.ps1` and `scripts/package_vscode.ps1`.
+    - Localized extension logo and added Git repository metadata in `extensions/vscode/package.json`.
+- Validation: 30/30 unit & integration tests passed in 2.78s. `tael doctor` passed all 6 checks with live local model.
+- Next step: stage, commit, and push these updates to GitHub `origin/main`.

@@ -51,6 +51,9 @@ def create_default_registry(
     registry.register(CompareBenchmarksTool())
 
     # Research tools
+    from tael.coding.tool import AiderCodingTool
+    registry.register(AiderCodingTool())
+
     registry.register(SearchWebTool(provider=search_provider))
     registry.register(FetchPageTool(reader=page_reader))
 

@@ -4,6 +4,10 @@
   "description": "Local-First AI Creation & Research Assistant for everyday laptops",
   "version": "3.0.0",
   "publisher": "tael-ai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SiddardhaShayini/TAEL_AI.git"
+  },
   "engines": {
     "vscode": "^1.75.0"
   },
@@ -21,7 +25,7 @@
     "offline-ai"
   ],
   "main": "./extension.js",
-  "icon": "../../assets/tael-logo-v3.svg",
+  "icon": "assets/tael-logo-v3.svg",
   "activationEvents": [
     "onCommand:tael.openStudio",
     "onCommand:tael.chat",
