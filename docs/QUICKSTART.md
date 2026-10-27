@@ -1,0 +1,87 @@
+# TAEL V3 — Beginner's Quickstart Guide
+
+**TAEL V3** (Task-Adaptive Efficient Language AI) is a local-first AI software creation and research assistant designed for everyday hardware, including CPU-only laptops with 8GB RAM.
+
+---
+
+## 1. Quick Installation (One-Command)
+
+### Windows (PowerShell)
+```powershell
+powershell -ExecutionPolicy Bypass -File .\setup.ps1
+```
+
+### Linux / macOS
+```bash
+bash setup.sh
+```
+
+The setup script checks your Python installation, sets up a fast virtual environment via `uv`, installs TAEL, and runs a diagnostic self-check.
+
+---
+
+## 2. Setting Up Local Inference (IBM Granite Code 3B)
+
+TAEL is optimized to run **IBM Granite Code 3B** locally through **Ollama**:
+
+1. Download and run Ollama from [https://ollama.com](https://ollama.com).
+2. Pull the Granite Code 3B model (approx 2.0 GB):
+   ```bash
+   ollama pull granite-code:3b
+   ```
+3. Run the TAEL doctor to verify the connection:
+   ```bash
+   tael doctor
+   ```
+
+*Note: If Ollama is offline, TAEL automatically operates with built-in mock/deterministic mode for testing.*
+
+---
+
+## 3. CLI Commands Reference
+
+| Command | Description |
+| :--- | :--- |
+| `tael chat [PROMPT]` | Start an interactive coding session or run a single prompt |
+| `tael status` | Show current RAM, CPU, active profile, and model backend status |
+| `tael doctor` | Run full system security and diagnostic checks |
+| `tael init` | Run the first-run hardware onboarding wizard |
+| `tael memory list` | View active project memory entries |
+| `tael memory search <query>` | Full-text search (FTS5) across project memory |
+| `tael memory export` | Export project memory to Markdown |
+| `tael memory clear` | Clear stored memories for current project |
+| `tael research <query>` | Search the web for technical documentation and libraries |
+| `tael profile <cmd>` | Benchmark execution time and peak RAM usage of a command |
+
+---
+
+## 4. Common Tasks
+
+### Starting an Interactive Coding Session
+```bash
+tael chat "Create a small inventory app with offline storage and tests"
+```
+
+### Checking Hardware & Active Resource Profile
+```bash
+tael status
+```
+
+### Researching Technical Libraries
+```bash
+tael research "Pydantic V2 migration best practices"
+```
+
+### Profiling an Algorithm
+```bash
+tael profile "python -c 'sum(x**2 for x in range(1000000))'"
+```
+
+---
+
+## 5. Security & Privacy
+
+- **Local Inference:** Your code and prompts stay on your machine.
+- **Approval Gates:** File writes, shell commands, and application launches require explicit user confirmation.
+- **Confinement:** File tools cannot read or modify files outside your project workspace.
+- **Audit Logging:** Every tool call is recorded to `.tael/audit.log` with secrets automatically redacted.

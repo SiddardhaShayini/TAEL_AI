@@ -140,3 +140,25 @@ This file is development continuity for the people and agents building TAEL V3. 
 - Mistakes and corrections:
   1. Circular import detected between `tael.research.tools` and `tael.tools.__init__`. Resolved by making research tool registration in `create_default_registry` lazy-imported.
 - Next step: Phase 6 (Packaging, beginner onboarding/first-run verification, and documentation).
+
+### 2026-10-27 12:48 (+05:30)
+
+- Implemented Phase 6 (Hardening, Packaging, Beginner Onboarding, and Diagnostics):
+  - First-run onboarding wizard in `src/tael/cli/onboarding.py`:
+    - Checks hardware memory, CPU cores, OS, and auto-selects Conservative (8GB) vs Balanced profile.
+    - Inspects Ollama and Granite Code 3B installation, displaying model download sizes (~2.0 GB) and recovery steps.
+    - Generates user-customized `.tael/config.yaml` automatically without requiring manual configuration file editing.
+  - Automated system diagnostics doctor in `src/tael/eval/doctor.py`:
+    - Runs 6 automated verification checks: workspace confinement security, SQLite FTS5 integrity, hardware supervisor sampling, audit log & secret redaction, typed tool registry coverage (15+ tools), and model backend reachability.
+  - One-command setup and launch scripts:
+    - Windows PowerShell bootstrap script in `setup.ps1`: handles Python checks, installs `uv`, creates `.venv`, installs TAEL, and runs doctor.
+    - POSIX bootstrap script in `setup.sh` for Linux and macOS.
+  - Documentation:
+    - `docs/QUICKSTART.md`: Step-by-step guide for beginners, local model setup, and CLI reference.
+    - `docs/ARCHITECTURE.md`: Subsystem architectures, security model, and resource supervisor documentation.
+    - Updated `README.md` with full feature overview and setup commands.
+  - CLI commands registered and verified: `tael init` (onboarding wizard) and `tael doctor` (diagnostic check scorecard).
+- Tests created and verified: 2 new test modules in `test_onboarding.py` and `test_doctor.py` (total 25 tests).
+- Validation: all 25 tests passed in 1.66s. `tael doctor` executed on live system and cleanly passed all 5 integrity checks with warning for offline Ollama. `tael init` executed and generated valid `.tael/config.yaml`.
+- Definition of Done status: all 9 criteria from `PLAN.md` Section 15 are fulfilled.
+- Next step: ready for end-user interaction and natural-language coding tasks.

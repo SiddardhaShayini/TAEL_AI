@@ -189,6 +189,28 @@ def cmd_profile(config: TaelConfig, command: str) -> None:
     console.print(table)
 
 
+def cmd_doctor(config: TaelConfig) -> None:
+    from tael.eval.doctor import SystemDoctor
+    doctor = SystemDoctor(config)
+    checks = doctor.run_all_checks()
+    table = Table(title=f"TAEL V3 System Diagnostics (v{__version__})")
+    table.add_column("Diagnostic Check", style="cyan", no_wrap=True)
+    table.add_column("Status", style="bold")
+    table.add_column("Details", style="white")
+
+    color_map = {"PASS": "green", "WARN": "yellow", "FAIL": "red"}
+    for c in checks:
+        col = color_map.get(c.status, "white")
+        table.add_row(c.name, f"[{col}]{c.status}[/{col}]", c.message)
+
+    console.print(table)
+
+
+def cmd_init(config: TaelConfig) -> None:
+    from tael.cli.onboarding import run_onboarding_wizard
+    run_onboarding_wizard(config)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="tael", description="TAEL V3: Local-First AI Creation & Research Assistant")
     parser.add_argument("--version", action="version", version=f"tael {__version__}")
@@ -219,6 +241,12 @@ def main() -> None:
     prof_parser = subparsers.add_parser("profile", help="Profile command execution time and peak memory")
     prof_parser.add_argument("command_str", help="Command to profile")
 
+    # tael doctor
+    subparsers.add_parser("doctor", help="Run system diagnostics and verify security/runtime health")
+
+    # tael init
+    subparsers.add_parser("init", help="Run onboarding setup wizard and configure workspace")
+
     args = parser.parse_args()
 
     config = TaelConfig.load()
@@ -227,6 +255,10 @@ def main() -> None:
 
     if args.command == "status":
         cmd_status(config)
+    elif args.command == "doctor":
+        cmd_doctor(config)
+    elif args.command == "init":
+        cmd_init(config)
     elif args.command == "chat":
         cmd_chat(config, args.prompt)
     elif args.command == "memory":
