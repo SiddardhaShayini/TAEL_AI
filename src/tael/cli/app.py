@@ -1,6 +1,7 @@
 import argparse
 import sys
 from pathlib import Path
+from typing import Optional
 
 # Ensure UTF-8 output on Windows consoles
 if sys.platform == "win32":
@@ -211,6 +212,37 @@ def cmd_init(config: TaelConfig) -> None:
     run_onboarding_wizard(config)
 
 
+def cmd_eval(config: TaelConfig, category: Optional[str] = None, export_path: Optional[str] = None) -> None:
+    from tael.eval.benchmark import BenchmarkRunner
+    runner = BenchmarkRunner(config)
+    console.print(Panel("[bold cyan]Running TAEL V3 Evaluation Benchmark Suite[/bold cyan]", border_style="cyan"))
+    report = runner.run_suite(category)
+
+    table = Table(title=f"Evaluation Suite Results ({report.passed_cases}/{report.total_cases} Passed - {report.pass_rate:.1f}%)")
+    table.add_column("Case ID", style="dim", no_wrap=True)
+    table.add_column("Category", style="cyan")
+    table.add_column("Description", style="white")
+    table.add_column("Status", style="bold")
+    table.add_column("Time (ms)", style="yellow")
+    table.add_column("Details", style="dim")
+
+    for r in report.results:
+        status_col = "green" if r.passed else "red"
+        status_str = f"[{status_col}]{'PASS' if r.passed else 'FAIL'}[/{status_col}]"
+        table.add_row(r.case_id, r.category, r.description, status_str, f"{r.duration_ms:.1f}", r.details)
+
+    console.print(table)
+    console.print(f"[bold]Total Benchmark Duration:[/bold] {report.total_duration_ms:.1f} ms | [bold]Hardware Profile:[/bold] {report.active_profile.upper()}")
+
+    if export_path:
+        out_file = Path(export_path)
+        if out_file.suffix.lower() == ".json":
+            out_file.write_text(report.to_json(), encoding="utf-8")
+        else:
+            out_file.write_text(report.to_markdown(), encoding="utf-8")
+        console.print(f"[green]Benchmark report exported to: {out_file}[/green]")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="tael", description="TAEL V3: Local-First AI Creation & Research Assistant")
     parser.add_argument("--version", action="version", version=f"tael {__version__}")
@@ -247,6 +279,11 @@ def main() -> None:
     # tael init
     subparsers.add_parser("init", help="Run onboarding setup wizard and configure workspace")
 
+    # tael eval / benchmark
+    eval_parser = subparsers.add_parser("eval", help="Run the versioned evaluation benchmark suite")
+    eval_parser.add_argument("--category", "-c", help="Filter by category (safety, tool_reliability, memory_efficiency, resource_bounds)")
+    eval_parser.add_argument("--export", "-e", help="Export report to Markdown or JSON file path")
+
     args = parser.parse_args()
 
     config = TaelConfig.load()
@@ -259,6 +296,8 @@ def main() -> None:
         cmd_doctor(config)
     elif args.command == "init":
         cmd_init(config)
+    elif args.command in ("eval", "benchmark"):
+        cmd_eval(config, args.category, args.export)
     elif args.command == "chat":
         cmd_chat(config, args.prompt)
     elif args.command == "memory":

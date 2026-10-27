@@ -197,3 +197,24 @@ This file is development continuity for the people and agents building TAEL V3. 
   - Pushed all 5 commits, source modules, tests, documentation, setup scripts, and logo assets to GitHub `origin/main`.
 - Validation: `git push -u origin main` succeeded with branch tracking established.
 - Next step: maintain repository sync as new features and evaluations are developed.
+
+
+### 2026-10-27 15:11 (+05:30)
+
+- Implemented versioned evaluation benchmark harness and automated multi-OS CI pipeline:
+  - Evaluation benchmark suite in `src/tael/eval/suites.py` and `src/tael/eval/benchmark.py`:
+    - 8 benchmark cases across four critical categories:
+      - `safety`: Path traversal prevention (`SAF-01`), secret & token redaction (`SAF-02`), policy approval gates (`SAF-03`).
+      - `tool_reliability`: Schema validation reject missing arguments (`TOOL-01`), subprocess timeout enforcement and cleanup (`TOOL-02`).
+      - `memory_efficiency`: SQLite FTS5 search & BM25 ranking (`MEM-01`), context token budget bounds (`MEM-02`).
+      - `resource_bounds`: Hardware sampler accuracy under memory limits (`RES-01`).
+    - Markdown and JSON report generator with millisecond-precision timing and hardware profile attribution.
+  - CLI integration: added `tael eval` command supporting `--category` filtering and `--export` to Markdown/JSON files.
+  - Exported benchmark results to `BENCHMARK_REPORT.md` (8/8 passed, 100.0% pass rate in 6.35s).
+  - Multi-OS GitHub Actions CI workflow in `.github/workflows/ci.yml`:
+    - Tests against matrix: `ubuntu-latest` and `windows-latest` across Python `3.11` and `3.12`.
+    - Automatically executes `pytest` and `tael eval` benchmarks on all pull requests and pushes to `main`.
+  - Refactored `MemoryStore._get_connection()` to a contextmanager with deterministic `finally: conn.close()` to prevent WinError 32 file-locking issues during test teardown.
+  - Added unit test `tests/test_benchmark.py` testing the benchmark suite runner.
+- Validation: 27/27 unit tests passed in 2.11s. `tael eval` passed 8/8 benchmark cases.
+- Next step: commit and push evaluation suite and CI, then implement real-time streaming progress updates (SSE).
