@@ -150,6 +150,45 @@ def cmd_memory(config: TaelConfig, args: argparse.Namespace) -> None:
         console.print(f"[red]Cleared {count} memory entries for project {store.project_id}.[/red]")
 
 
+def cmd_research(config: TaelConfig, query: str) -> None:
+    from tael.research.tools import SearchWebTool
+    console.print(Panel(f"[bold cyan]Researching:[/bold cyan] {query}", border_style="cyan"))
+    tool = SearchWebTool()
+    res = tool.run({"query": query, "max_results": 5}, {"workspace_root": config.workspace_root})
+    if not res.success:
+        console.print(f"[red]Research query failed: {res.error}[/red]")
+        return
+    results = res.data.get("results", [])
+    if not results:
+        console.print("[yellow]No results found.[/yellow]")
+        return
+    table = Table(title=f"Search Findings ({len(results)} sources)")
+    table.add_column("Title", style="bold green")
+    table.add_column("Source Domain", style="dim")
+    table.add_column("Snippet Preview", style="white")
+    for r in results:
+        table.add_row(r["title"][:40], r["domain"], r["snippet"][:100] + "...")
+    console.print(table)
+
+
+def cmd_profile(config: TaelConfig, command: str) -> None:
+    from tael.tools.profiler import ProfileCommandTool
+    console.print(Panel(f"[bold magenta]Profiling Command:[/bold magenta] {command}", border_style="magenta"))
+    tool = ProfileCommandTool()
+    res = tool.run({"command": command}, {"workspace_root": config.workspace_root})
+    if not res.success:
+        console.print(f"[red]Profiling failed: {res.error}[/red]")
+        return
+    data = res.data
+    table = Table(title="Benchmark Measurements")
+    table.add_column("Metric", style="cyan")
+    table.add_column("Value", style="bold yellow")
+    table.add_row("Execution Time", f"{data['duration_ms']:.2f} ms")
+    table.add_row("Peak Memory (RSS)", f"{data['peak_memory_mb']:.2f} MB")
+    table.add_row("Exit Code", str(data["exit_code"]))
+    console.print(table)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="tael", description="TAEL V3: Local-First AI Creation & Research Assistant")
     parser.add_argument("--version", action="version", version=f"tael {__version__}")
@@ -172,6 +211,14 @@ def main() -> None:
     mem_sub.add_parser("export", help="Export memory to Markdown file")
     mem_sub.add_parser("clear", help="Clear all memory for this project")
 
+    # tael research <query>
+    res_parser = subparsers.add_parser("research", help="Search internet and synthesize technical research")
+    res_parser.add_argument("query", help="Research query")
+
+    # tael profile <command>
+    prof_parser = subparsers.add_parser("profile", help="Profile command execution time and peak memory")
+    prof_parser.add_argument("command_str", help="Command to profile")
+
     args = parser.parse_args()
 
     config = TaelConfig.load()
@@ -184,6 +231,10 @@ def main() -> None:
         cmd_chat(config, args.prompt)
     elif args.command == "memory":
         cmd_memory(config, args)
+    elif args.command == "research":
+        cmd_research(config, args.query)
+    elif args.command == "profile":
+        cmd_profile(config, args.command_str)
     else:
         # Default action: if prompt given, chat; otherwise show status
         cmd_status(config)

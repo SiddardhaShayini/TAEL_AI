@@ -117,3 +117,26 @@ This file is development continuity for the people and agents building TAEL V3. 
   3. Default user home `.tael` directory had restricted permissions in Windows sandbox environment. Added probe-based write check falling back to workspace `.tael`.
   4. Windows console default CP1252 encoding threw `UnicodeEncodeError` on checkmark in `tael memory list`. Reconfigured stdout to UTF-8 and replaced non-ASCII icons with clean ASCII indicators.
 - Next step: proceed to Phase 3 (MCP connectors and desktop app launch integrations) and Phase 4 (internet search & research connectors).
+
+### 2026-10-27 12:32 (+05:30)
+
+- Implemented Phase 3 (Desktop Assistance & MCP Connector Layer), Phase 4 (Internet Search & Deep Research), and Phase 5 (Hardware-Aware Profiling & Optimization):
+  - Desktop integrations in `src/tael/tools/desktop.py`:
+    - `LaunchAppTool` (`launch_application`) with approved applications allowlist (`notepad`, `vscode`, `terminal`, `calc`) and scope confirmation.
+    - `OpenUrlTool` (`open_url`) opening verified http/https links in system default browser.
+  - MCP connector architecture in `src/tael/connectors/mcp.py`:
+    - `MCPClient` implementing JSON-RPC 2.0 over stdio for external MCP tool discovery (`tools/list`) and invocation (`tools/call`).
+    - `MCPToolAdapter` converting arbitrary MCP tool definitions into schema-validated, permissioned `BaseTool` instances for TAEL's registry.
+  - Internet search & research connector in `src/tael/research/`:
+    - `DuckDuckGoSearchProvider` and `MockSearchProvider` for query search with structured results (`title`, `url`, `snippet`, `domain`).
+    - `PageReader` fetching web pages with a 60KB payload ceiling, HTML sanitization, script/style removal, and untrusted external content banner tagging.
+    - `SearchWebTool` and `FetchPageTool` registered under `PermissionLevel.INTERNET_ACCESS`.
+  - Hardware-aware optimization & profiling tools in `src/tael/tools/profiler.py`:
+    - `ProfileCommandTool` executing commands under child process tree memory (RSS) and duration monitoring.
+    - `CompareBenchmarksTool` calculating speedup factors, percentage deltas, and memory usage differences.
+  - Updated CLI in `src/tael/cli/app.py` with `tael research <query>` and `tael profile <command>`.
+- Tests created and verified: 8 new tests across `test_desktop.py`, `test_mcp.py`, `test_research.py`, and `test_profiler.py` (total 23 tests).
+- Validation: all 23 tests passed in 1.27s. Live search and page retrieval tested and verified. Profiler benchmark command tested on live subshell.
+- Mistakes and corrections:
+  1. Circular import detected between `tael.research.tools` and `tael.tools.__init__`. Resolved by making research tool registration in `create_default_registry` lazy-imported.
+- Next step: Phase 6 (Packaging, beginner onboarding/first-run verification, and documentation).
