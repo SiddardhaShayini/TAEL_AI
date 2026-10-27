@@ -291,3 +291,19 @@ This file is development continuity for the people and agents building TAEL V3. 
   - Added `release/` to `.gitignore`.
 - Validation: 30/30 tests passed (`pytest`). Release binary verified: `.\release\tael-v3.0.0-windows-x64.exe --version` returns `tael 3.0.0a1`.
 - Next step: stage, commit, and push updates to GitHub `origin/main`.
+
+
+### 2026-10-27 18:03 (+05:30)
+
+- Added automated GitHub Release workflow, MCP defaults, and technical documentation:
+  - Configuration & Guide:
+    - Updated `src/tael/config/defaults.yaml` with `mcp_servers: {}` block.
+    - Created `docs/MCP_GUIDE.md` covering stdio JSON-RPC handshake, configuration examples, `tael mcp test` diagnostics, and permission confinement.
+    - Added MCP documentation link in `README.md`.
+  - Automated Release CI Workflow (`.github/workflows/release.yml`):
+    - Triggers on git tags `v*` (or manual dispatch).
+    - Compiles the standalone Windows executable on `windows-latest`.
+    - Packages the VS Code extension on `ubuntu-latest`.
+    - Generates SHA256 checksums and automatically publishes a official GitHub Release via `softprops/action-gh-release@v2`.
+- Validation: 30/30 unit tests passed in 1.90s.
+- Next step: stage, commit, tag `v3.0.0a1`, and push to GitHub `origin/main`.

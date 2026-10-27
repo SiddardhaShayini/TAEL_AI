@@ -1,0 +1,110 @@
+name: TAEL V3 Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+jobs:
+  build-windows:
+    name: Build Windows Standalone Executable
+    runs-on: windows-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "latest"
+
+      - name: Install Dependencies & PyInstaller
+        run: |
+          uv venv
+          uv pip install -e ".[dev]"
+          uv pip install pyinstaller
+
+      - name: Run Tests
+        run: |
+          .venv\Scripts\pytest -q
+
+      - name: Compile Standalone Executable
+        run: |
+          powershell -ExecutionPolicy Bypass -File .\scripts\build_standalone.ps1
+
+      - name: Rename & Stage Binary
+        run: |
+          mkdir release
+          Copy-Item "dist\tael.exe" "release\tael-windows-x64.exe"
+
+      - name: Upload Windows Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tael-windows-x64
+          path: release/tael-windows-x64.exe
+
+  build-vscode:
+    name: Package VS Code Extension
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Package VSIX
+        working-directory: extensions/vscode
+        run: |
+          npx --yes @vscode/vsce@3.2.1 package --no-git-tag-version --allow-missing-repository
+
+      - name: Upload VSIX Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tael-vscode-extension
+          path: extensions/vscode/*.vsix
+
+  create-release:
+    name: Publish GitHub Release
+    needs: [build-windows, build-vscode]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Download Windows Binary
+        uses: actions/download-artifact@v4
+        with:
+          name: tael-windows-x64
+          path: release/
+
+      - name: Download VS Code VSIX
+        uses: actions/download-artifact@v4
+        with:
+          name: tael-vscode-extension
+          path: release/
+
+      - name: Generate Checksums
+        working-directory: release
+        run: |
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release/*
+          generate_release_notes: true
+          draft: false
+          prerelease: false

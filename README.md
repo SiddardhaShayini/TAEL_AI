@@ -119,6 +119,7 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build_standalone.ps1
 
 - [Quickstart Guide](docs/QUICKSTART.md) — Beginner installation and configuration
 - [Technical Architecture](docs/ARCHITECTURE.md) — Subsystem designs and security model
+- [MCP Integration Guide](docs/MCP_GUIDE.md) — Connecting external stdio MCP tools
 - [Evaluation Report](BENCHMARK_REPORT.md) — Verified benchmark suite results
 - [Full Plan](PLAN.md) — Authoritative product vision and specification
 - [Development Memory](PROJECT_MEMORY.md) — Engineering work log and project continuity
