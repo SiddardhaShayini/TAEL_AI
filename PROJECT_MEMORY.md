@@ -188,3 +188,12 @@ This file is development continuity for the people and agents building TAEL V3. 
   - Tests updated and verified: added `test_snapshot_manager` in `tests/test_policy.py` and API checkpoint/tools tests in `tests/test_api.py` (total 26 tests).
 - Validation: all 26 tests passed in 1.65s. `tael doctor` confirms all 17 registered tools are schema-validated.
 - Next step: system is comprehensive, hardened, and ready for full end-user workflows.
+
+### 2026-10-27 14:58 (+05:30)
+
+- Configured GitHub remote and published codebase:
+  - Added remote `origin`: `https://github.com/SiddardhaShayini/TAEL_AI.git`.
+  - Renamed local branch from `master` to standard `main`.
+  - Pushed all 5 commits, source modules, tests, documentation, setup scripts, and logo assets to GitHub `origin/main`.
+- Validation: `git push -u origin main` succeeded with branch tracking established.
+- Next step: maintain repository sync as new features and evaluations are developed.
