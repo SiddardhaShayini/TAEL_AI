@@ -307,3 +307,19 @@ This file is development continuity for the people and agents building TAEL V3. 
     - Generates SHA256 checksums and automatically publishes a official GitHub Release via `softprops/action-gh-release@v2`.
 - Validation: 30/30 unit tests passed in 1.90s.
 - Next step: stage, commit, tag `v3.0.0a1`, and push to GitHub `origin/main`.
+
+
+### 2026-10-27 18:22 (+05:30)
+
+- Completed end-to-end live task workflow, non-native tool fallback, and reference application suite:
+  - Reference Inventory Application in `examples/inventory_app/`:
+    - SQLite-backed offline storage with automatic schema migrations, SKU upsert, low-stock threshold queries, and deletion.
+    - Full pytest suite in `examples/inventory_app/test_inventory.py` (4 tests passing).
+  - Non-Native Tool Calling Fallback in `src/tael/models/client.py`:
+    - Detected and handled Ollama HTTP 400 error when models like `granite-code:3b` lack native tool calling metadata.
+    - Implemented automatic retry without `tools` payload parameter and added text-based tool extraction fallback.
+  - End-to-End Programmatic Demo in `examples/demo_workflow.py`:
+    - Exercises all 5 core subsystems: resource profiling, SQLite FTS5 BM25 memory retrieval, Git snapshot checkpoints, live Granite local inference, and subprocess profiling via `ProfileCommandTool`.
+  - Added unit test `tests/test_examples.py` (total 31 unit tests passing in 2.0s).
+- Validation: all 31 tests passing (`pytest`). Live `examples/demo_workflow.py` ran end-to-end on real hardware and completed with exit code 0.
+- Next step: stage, commit, and push changes to GitHub `origin/main`.
