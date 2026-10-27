@@ -60,3 +60,19 @@ async def test_api_endpoints(tmp_path: Path):
         res_search = await client.post("/memory/search", json={"query": "test", "limit": 5})
         assert res_search.status_code == 200
         assert isinstance(res_search.json(), list)
+
+        # 7. Tools list
+        res_tools = await client.get("/tools")
+        assert res_tools.status_code == 200
+        tools_data = res_tools.json()
+        assert len(tools_data) >= 15
+        assert any(t["name"] == "read_file" for t in tools_data)
+
+        # 8. Checkpoints
+        res_chk_create = await client.post("/checkpoints", json={"description": "Test checkpoint from API"})
+        assert res_chk_create.status_code == 200
+        assert "id" in res_chk_create.json()
+
+        res_chk_list = await client.get("/checkpoints")
+        assert res_chk_list.status_code == 200
+        assert len(res_chk_list.json()) >= 1

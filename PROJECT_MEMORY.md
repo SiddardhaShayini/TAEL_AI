@@ -173,3 +173,18 @@ This file is development continuity for the people and agents building TAEL V3. 
   - Added unit and integration tests in `tests/test_api.py` validating `GET /` and `GET /logo.svg`.
 - Validation: all 25 tests passed in 2.11s. API dashboard verified serving HTML and SVG logo.
 - Next step: deployable and ready for natural-language code creation workflows.
+
+### 2026-10-27 14:46 (+05:30)
+
+- Built and verified Workspace Safety Checkpoint/Rollback Recovery and Interactive Web Agent Studio:
+  - Workspace Snapshot & Rollback system in `src/tael/policy/rollback.py`:
+    - `SnapshotManager`: automatically creates git-staged checkpoint commits or directory snapshots before destructive changes.
+    - Bound snapshot history to 20 checkpoints.
+    - Added `CreateCheckpointTool` (`create_checkpoint`) and `RollbackWorkspaceTool` (`rollback_workspace`) to `src/tael/tools/workspace.py`.
+    - Total tools in registry increased to 17 tools.
+  - Interactive Web Studio in `src/tael/api/server.py`:
+    - Tabbed UI for `GET /`: Interactive Agent Chat Studio with streaming-ready response and tool card pills, Live System Hardware Telemetry, and Registered Tools browser.
+    - Added API endpoints: `GET /tools` (full schema export), `GET /checkpoints`, `POST /checkpoints`, and `POST /rollback`.
+  - Tests updated and verified: added `test_snapshot_manager` in `tests/test_policy.py` and API checkpoint/tools tests in `tests/test_api.py` (total 26 tests).
+- Validation: all 26 tests passed in 1.65s. `tael doctor` confirms all 17 registered tools are schema-validated.
+- Next step: system is comprehensive, hardened, and ready for full end-user workflows.

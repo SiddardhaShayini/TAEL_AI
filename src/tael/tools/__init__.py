@@ -1,6 +1,13 @@
 from tael.tools.base import BaseTool, ToolResult
 from tael.tools.registry import ToolRegistry
-from tael.tools.workspace import ReadFileTool, WriteFileTool, ListDirTool, SearchFilesTool
+from tael.tools.workspace import (
+    ReadFileTool,
+    WriteFileTool,
+    ListDirTool,
+    SearchFilesTool,
+    CreateCheckpointTool,
+    RollbackWorkspaceTool,
+)
 from tael.tools.git_tools import GitStatusTool, GitDiffTool, GitLogTool
 from tael.tools.execution import ExecuteCommandTool
 from tael.tools.system_info import SystemInfoTool
@@ -27,6 +34,8 @@ def create_default_registry(
     registry.register(WriteFileTool())
     registry.register(ListDirTool())
     registry.register(SearchFilesTool())
+    registry.register(CreateCheckpointTool())
+    registry.register(RollbackWorkspaceTool())
     registry.register(GitStatusTool())
     registry.register(GitDiffTool())
     registry.register(GitLogTool())
@@ -56,6 +65,8 @@ __all__ = [
     "WriteFileTool",
     "ListDirTool",
     "SearchFilesTool",
+    "CreateCheckpointTool",
+    "RollbackWorkspaceTool",
     "GitStatusTool",
     "GitDiffTool",
     "GitLogTool",

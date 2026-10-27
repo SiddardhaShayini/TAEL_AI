@@ -237,3 +237,70 @@ class SearchFilesTool(BaseTool):
             data={"matches": results, "count": len(results)},
             truncated=len(results) >= max_results,
         )
+
+
+class CreateCheckpointTool(BaseTool):
+    name = "create_checkpoint"
+    description = "Create a safety snapshot checkpoint of the workspace before making major changes."
+    permission = PermissionLevel.READ_WORKSPACE
+    parameters_schema = {
+        "type": "object",
+        "properties": {
+            "description": {"type": "string", "description": "Brief description of the work about to be done."},
+        },
+        "required": ["description"],
+    }
+
+    def run(self, arguments: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+        from tael.policy.rollback import SnapshotManager
+        ws_root = context.get("workspace_root", os.getcwd())
+        mgr = SnapshotManager(ws_root)
+        try:
+            chk = mgr.create_checkpoint(arguments["description"])
+            return ToolResult(
+                success=True,
+                data={
+                    "checkpoint_id": chk.id,
+                    "description": chk.description,
+                    "timestamp": chk.timestamp,
+                    "git_commit": chk.git_commit,
+                    "message": f"Checkpoint '{chk.id}' created successfully.",
+                },
+            )
+        except Exception as e:
+            return ToolResult(success=False, data=None, error=f"Failed to create checkpoint: {str(e)}")
+
+
+class RollbackWorkspaceTool(BaseTool):
+    name = "rollback_workspace"
+    description = "Roll back the workspace to a previous safety checkpoint if edits failed or were rejected."
+    permission = PermissionLevel.WRITE_WORKSPACE
+    parameters_schema = {
+        "type": "object",
+        "properties": {
+            "checkpoint_id": {
+                "type": "string",
+                "description": "Optional specific checkpoint ID. If omitted, rolls back to the latest checkpoint.",
+            },
+        },
+    }
+
+    def run(self, arguments: Dict[str, Any], context: Dict[str, Any]) -> ToolResult:
+        from tael.policy.rollback import SnapshotManager
+        ws_root = context.get("workspace_root", os.getcwd())
+        mgr = SnapshotManager(ws_root)
+        chk_id = arguments.get("checkpoint_id")
+        try:
+            success = mgr.rollback(chk_id)
+            if success:
+                return ToolResult(
+                    success=True,
+                    data={"rolled_back": True, "target_checkpoint": chk_id or "latest", "message": "Workspace successfully rolled back."},
+                )
+            return ToolResult(
+                success=False,
+                data=None,
+                error="Rollback failed: checkpoint not found or workspace could not be reverted.",
+            )
+        except Exception as e:
+            return ToolResult(success=False, data=None, error=f"Rollback error: {str(e)}")

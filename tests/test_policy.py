@@ -79,3 +79,18 @@ def test_approval_manager():
     mgr_allow = ApprovalManager(cfg, custom_approver=lambda t, p, a: True)
     dec_write = mgr_allow.request_approval("write_file", PermissionLevel.WRITE_WORKSPACE, {})
     assert dec_write.granted is True
+
+
+def test_snapshot_manager(tmp_path: Path):
+    from tael.policy.rollback import SnapshotManager
+    mgr = SnapshotManager(str(tmp_path))
+
+    # Create checkpoint
+    chk = mgr.create_checkpoint("Initial state test")
+    assert chk.id.startswith("chk_")
+    assert chk.description == "Initial state test"
+
+    # List checkpoints
+    checkpoints = mgr.list_checkpoints()
+    assert len(checkpoints) >= 1
+    assert any(c["id"] == chk.id for c in checkpoints)

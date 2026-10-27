@@ -9,6 +9,7 @@ from tael.policy.approval import (
     ApprovalCallback,
 )
 from tael.policy.audit import AuditLogger, redact_secrets
+from tael.policy.rollback import SnapshotManager, WorkspaceCheckpoint
 
 __all__ = [
     "PermissionLevel",
@@ -19,4 +20,6 @@ __all__ = [
     "ApprovalCallback",
     "AuditLogger",
     "redact_secrets",
+    "SnapshotManager",
+    "WorkspaceCheckpoint",
 ]
