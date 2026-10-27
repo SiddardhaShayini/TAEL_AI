@@ -1,6 +1,12 @@
-# TAEL AI (V3)
-**Task-Adaptive Efficient Language AI**  
-*"Capable local AI, built for everyday hardware."*
+<p align="center">
+  <img src="assets/tael-logo-v3.svg" width="140" height="140" alt="TAEL AI Logo" />
+</p>
+
+<h1 align="center">TAEL AI (V3)</h1>
+<p align="center">
+  <strong>Task-Adaptive Efficient Language AI</strong><br>
+  <em>"Capable local AI, built for everyday hardware."</em>
+</p>
 
 TAEL V3 is a local-first AI software creation and research assistant designed for everyday laptops, specifically engineered to operate reliably on CPU-only systems with 8GB RAM.
 

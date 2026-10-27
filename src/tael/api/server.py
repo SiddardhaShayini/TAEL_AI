@@ -1,5 +1,7 @@
+from pathlib import Path
 from typing import Any, Dict, List, Optional
-from fastapi import FastAPI, HTTPException, Header, Depends
+from fastapi import FastAPI, HTTPException, Header, Depends, Response
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 
 from tael import __version__
@@ -10,6 +12,18 @@ from tael.memory.models import MemoryCategory
 from tael.memory.store import MemoryStore
 from tael.models.runtime import ModelRuntimeManager
 from tael.resources.monitor import ResourceMonitor
+
+
+def get_logo_svg_path(workspace_root: str) -> Optional[Path]:
+    candidates = [
+        Path(workspace_root) / "assets" / "tael-logo-v3.svg",
+        Path(__file__).parents[3] / "assets" / "tael-logo-v3.svg",
+        Path.cwd() / "assets" / "tael-logo-v3.svg",
+    ]
+    for c in candidates:
+        if c.exists() and c.is_file():
+            return c
+    return None
 
 
 def create_app(config: Optional[TaelConfig] = None) -> FastAPI:
@@ -33,6 +47,112 @@ def create_app(config: Optional[TaelConfig] = None) -> FastAPI:
         if not authorization or authorization != f"Bearer {cfg.server.auth_token}":
             raise HTTPException(status_code=401, detail="Unauthorized: invalid or missing bearer token")
         return True
+
+    @app.get("/logo.svg")
+    def get_logo():
+        logo_path = get_logo_svg_path(cfg.workspace_root)
+        if logo_path:
+            return Response(content=logo_path.read_text(encoding="utf-8"), media_type="image/svg+xml")
+        raise HTTPException(status_code=404, detail="Logo SVG not found")
+
+    @app.get("/", response_class=HTMLResponse)
+    def index():
+        snapshot = resource_monitor.sample()
+        runtime = ModelRuntimeManager(cfg.model)
+        ollama_ok = runtime.check_health()
+        installed = runtime.list_installed_models() if ollama_ok else []
+        status_badge = '<span style="color:#2BB3A3;font-weight:bold;">ONLINE</span>' if ollama_ok else '<span style="color:#FFB547;font-weight:bold;">OFFLINE (Mock Mode)</span>'
+        pressure_badge = '<span style="color:#ff6b6b;font-weight:bold;">YES</span>' if snapshot.is_under_pressure else '<span style="color:#2BB3A3;font-weight:bold;">NO</span>'
+
+        return f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>TAEL AI — Local Dashboard</title>
+  <link rel="icon" type="image/svg+xml" href="/logo.svg">
+  <style>
+    body {{
+      margin: 0; padding: 0;
+      background-color: #08161A;
+      color: #E8F1EE;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      display: flex; flex-direction: column; align-items: center; min-height: 100vh;
+    }}
+    .container {{
+      max-width: 800px; width: 90%; margin: 40px auto;
+      background: #0F2A30; border-radius: 16px; border: 1px solid #2BB3A3;
+      padding: 32px; box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+    }}
+    .header {{
+      display: flex; align-items: center; gap: 24px; border-bottom: 1px solid rgba(43,179,163,0.3);
+      padding-bottom: 24px; margin-bottom: 24px;
+    }}
+    .header img {{ width: 96px; height: 96px; }}
+    h1 {{ margin: 0 0 6px 0; color: #E8F1EE; font-size: 28px; }}
+    .tagline {{ margin: 0; color: #2BB3A3; font-size: 14px; font-weight: 500; }}
+    .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; margin: 24px 0; }}
+    .card {{
+      background: #08161A; border: 1px solid rgba(43,179,163,0.3); border-radius: 10px; padding: 16px;
+    }}
+    .card-title {{ font-size: 12px; text-transform: uppercase; color: #2BB3A3; margin-bottom: 6px; letter-spacing: 0.5px; }}
+    .card-val {{ font-size: 20px; font-weight: bold; color: #E8F1EE; }}
+    .footer {{ margin-top: 24px; display: flex; gap: 16px; }}
+    .btn {{
+      display: inline-block; background: #2BB3A3; color: #08161A; padding: 10px 20px; border-radius: 8px;
+      text-decoration: none; font-weight: bold; transition: background 0.2s;
+    }}
+    .btn:hover {{ background: #FFB547; }}
+    .btn-outline {{
+      background: transparent; border: 1px solid #2BB3A3; color: #2BB3A3;
+    }}
+    .btn-outline:hover {{ background: #2BB3A3; color: #08161A; }}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <img src="/logo.svg" alt="TAEL AI Logo" />
+      <div>
+        <h1>TAEL AI (v{__version__})</h1>
+        <p class="tagline">Task-Adaptive Efficient Language AI &mdash; Capable local AI, built for everyday hardware.</p>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">Resource Profile</div>
+        <div class="card-val">{snapshot.active_profile.upper()}</div>
+      </div>
+      <div class="card">
+        <div class="card-title">RAM Available / Total</div>
+        <div class="card-val">{snapshot.available_ram_gb} GB / {snapshot.total_ram_gb} GB</div>
+      </div>
+      <div class="card">
+        <div class="card-title">CPU Logical Cores</div>
+        <div class="card-val">{snapshot.cpu_count_logical} Cores ({snapshot.cpu_percent}% load)</div>
+      </div>
+      <div class="card">
+        <div class="card-title">System Under Pressure</div>
+        <div class="card-val">{pressure_badge}</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Model Backend</div>
+        <div class="card-val">{cfg.model.model_name}</div>
+      </div>
+      <div class="card">
+        <div class="card-title">Inference Engine Status</div>
+        <div class="card-val">{status_badge}</div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <a class="btn" href="/docs">API Interactive Docs (Swagger)</a>
+      <a class="btn btn-outline" href="/status">JSON Status Endpoint</a>
+      <a class="btn btn-outline" href="/health">Health Check</a>
+    </div>
+  </div>
+</body>
+</html>"""
 
     @app.get("/health")
     def health_check():

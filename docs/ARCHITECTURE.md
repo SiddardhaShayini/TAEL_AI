@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="../assets/tael-logo-v3.svg" width="100" height="100" alt="TAEL AI Logo" />
+</p>
+
 # TAEL V3 — Technical Architecture
 
 This document outlines the architecture, security model, and resource management strategies implemented in **TAEL V3** based on [PLAN.md](../PLAN.md).

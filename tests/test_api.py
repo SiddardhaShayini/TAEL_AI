@@ -21,6 +21,17 @@ async def test_api_endpoints(tmp_path: Path):
         assert res_health.status_code == 200
         assert res_health.json()["status"] == "ok"
 
+        # 1b. Root Dashboard & Logo
+        res_index = await client.get("/")
+        assert res_index.status_code == 200
+        assert "TAEL AI" in res_index.text
+        assert "/logo.svg" in res_index.text
+
+        res_logo = await client.get("/logo.svg")
+        assert res_logo.status_code == 200
+        assert "image/svg+xml" in res_logo.headers.get("content-type", "")
+        assert "<svg" in res_logo.text
+
         # 2. Status
         res_status = await client.get("/status")
         assert res_status.status_code == 200
