@@ -86,6 +86,13 @@ class OllamaClient(LLMClient):
         try:
             with httpx.Client(timeout=self.config.timeout_seconds) as client:
                 res = client.post(f"{self.config.endpoint}/api/chat", json=payload)
+                if res.status_code == 400 and "does not support tools" in res.text:
+                    # Model does not declare native tool calling in its Modelfile (e.g. granite-code:3b)
+                    # Retry without the 'tools' parameter as a resilient fallback
+                    payload_no_tools = dict(payload)
+                    payload_no_tools.pop("tools", None)
+                    res = client.post(f"{self.config.endpoint}/api/chat", json=payload_no_tools)
+
                 if res.status_code != 200:
                     raise RuntimeError(f"Ollama returned HTTP {res.status_code}: {res.text}")
 
@@ -105,6 +112,21 @@ class OllamaClient(LLMClient):
                             fn_args = {}
                     if fn_name:
                         tool_calls.append(ToolCall(name=fn_name, arguments=fn_args))
+
+                # Text-based tool extraction fallback for models without native tool calling
+                if not tool_calls and content:
+                    import re
+                    pattern = r"```(?:json)?\s*(\{\s*\"tool\"\s*:\s*\"[^\"]+\".*?\})\s*```"
+                    call_match = re.search(pattern, content, re.DOTALL)
+                    if call_match:
+                        try:
+                            parsed = json.loads(call_match.group(1))
+                            tname = parsed.get("tool")
+                            targs = parsed.get("args") or parsed.get("arguments") or {}
+                            if tname:
+                                tool_calls.append(ToolCall(name=tname, arguments=targs))
+                        except Exception:
+                            pass
 
                 return LLMResponse(
                     content=content,
