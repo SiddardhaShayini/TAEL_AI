@@ -73,10 +73,11 @@ def run_demo():
     print(f"   Final Answer:\n{result['final_answer']}")
 
     # 5. Profile a Command
+    import sys
     profiler = ProfileCommandTool()
     print("\n5. Profiling Python Test Suite Execution...")
     prof_res = profiler.run(
-        {"command": "pytest examples/inventory_app/test_inventory.py -q"},
+        {"command": f"{sys.executable} -m pytest examples/inventory_app/test_inventory.py -q"},
         {"workspace_root": config.workspace_root},
     )
     if prof_res.success:
