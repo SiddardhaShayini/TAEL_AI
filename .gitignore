@@ -46,3 +46,4 @@ htmlcov/
 *.sqlite3
 .tael/
 *.vsix
+release/

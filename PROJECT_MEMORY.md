@@ -274,3 +274,20 @@ This file is development continuity for the people and agents building TAEL V3. 
     - Extensively updated `README.md` and `docs/QUICKSTART.md` covering `tael eval`, `tael server` Web Studio, VS Code `.vsix` installation, and standalone compilation.
 - Validation: 30/30 unit & integration tests passing (`pytest`). `tael eval` 8/8 passing both in Python environment and compiled `dist/tael.exe`.
 - Next step: stage, commit, and push changes to GitHub `origin/main`.
+
+
+### 2026-10-27 17:57 (+05:30)
+
+- Completed MCP server catalog configuration and automated multi-artifact release pipeline:
+  - MCP Server Configuration & Lifecycle:
+    - Added `MCPServerConfig` in `src/tael/config/settings.py` supporting `command`, `enabled`, and `permission` fields.
+    - Updated `create_default_registry()` in `src/tael/tools/__init__.py` and `TaskOrchestrator` in `src/tael/core/orchestrator.py` to auto-discover and attach configured stdio MCP servers.
+    - Added `tael mcp` CLI command in `src/tael/cli/app.py` with `list` and `test <server_name>` subcommands.
+  - Automated Release Packaging Pipeline in `scripts/release.ps1`:
+    - Executes pytest suite (30/30 passed in 2.50s).
+    - Packages VS Code extension into `release/tael-ai-3.0.0.vsix` (11.5 KB).
+    - Compiles clean standalone Windows binary into `release/tael-v3.0.0-windows-x64.exe` (19.07 MB).
+    - Computes SHA256 hashes and writes `release/SHA256SUMS.txt`.
+  - Added `release/` to `.gitignore`.
+- Validation: 30/30 tests passed (`pytest`). Release binary verified: `.\release\tael-v3.0.0-windows-x64.exe --version` returns `tael 3.0.0a1`.
+- Next step: stage, commit, and push updates to GitHub `origin/main`.

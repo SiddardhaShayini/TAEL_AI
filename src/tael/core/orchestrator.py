@@ -46,7 +46,7 @@ class TaskOrchestrator:
         self.config = config
         self.workspace_root = config.workspace_root
         self.resource_monitor = resource_monitor or ResourceMonitor(config.resource.profile)
-        self.tools = tool_registry or create_default_registry()
+        self.tools = tool_registry or create_default_registry(mcp_servers=config.mcp_servers)
         self.llm = llm_client or create_llm_client(config.model)
         
         self.memory_store = memory_store or MemoryStore(

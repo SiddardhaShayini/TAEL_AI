@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import Literal, Optional
+from typing import Dict, List, Literal, Optional
 import os
 import yaml
 from pydantic import BaseModel, Field
@@ -48,6 +48,12 @@ class ServerConfig(BaseModel):
     auth_token: Optional[str] = None
 
 
+class MCPServerConfig(BaseModel):
+    command: List[str]
+    enabled: bool = True
+    permission: str = "external_side_effect"
+
+
 class TaelConfig(BaseModel):
     workspace_root: str = Field(default_factory=lambda: os.getcwd())
     model: ModelConfig = Field(default_factory=ModelConfig)
@@ -55,6 +61,7 @@ class TaelConfig(BaseModel):
     policy: PolicyConfig = Field(default_factory=PolicyConfig)
     memory: MemoryConfig = Field(default_factory=MemoryConfig)
     server: ServerConfig = Field(default_factory=ServerConfig)
+    mcp_servers: Dict[str, MCPServerConfig] = Field(default_factory=dict)
 
     @classmethod
     def get_default_config_path(cls) -> Path:

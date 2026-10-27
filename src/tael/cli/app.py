@@ -257,6 +257,49 @@ def cmd_server(config: TaelConfig, host: str = "127.0.0.1", port: int = 7860) ->
     uvicorn.run(app, host=host, port=port, log_level="info")
 
 
+def cmd_mcp(config: TaelConfig, args: argparse.Namespace) -> None:
+    action = getattr(args, "mcp_action", None) or "list"
+    servers = config.mcp_servers
+
+    if action == "list" or not action:
+        if not servers:
+            console.print("[yellow]No external MCP servers configured.[/yellow]")
+            console.print("Add servers under [bold]mcp_servers[/bold] in [cyan].tael/config.yaml[/cyan].")
+            return
+
+        table = Table(title="Configured External MCP Servers")
+        table.add_column("Server Name", style="cyan", no_wrap=True)
+        table.add_column("Status", style="bold")
+        table.add_column("Command", style="white")
+
+        for name, scfg in servers.items():
+            status = "[green]ENABLED[/green]" if scfg.enabled else "[dim]DISABLED[/dim]"
+            cmd_str = " ".join(scfg.command)
+            table.add_row(name, status, cmd_str)
+
+        console.print(table)
+
+    elif action == "test":
+        target = args.server_name
+        if target not in servers:
+            console.print(f"[red]Error: MCP server '{target}' not found in configuration.[/red]")
+            return
+
+        scfg = servers[target]
+        from tael.connectors.mcp import MCPClient
+        console.print(f"[bold cyan]Testing MCP server:[/bold cyan] {target} ([dim]{' '.join(scfg.command)}[/dim])")
+        client = MCPClient(scfg.command, server_name=target)
+        try:
+            client.start()
+            tools = client.list_tools()
+            console.print(f"[green]Successfully connected to '{target}'. Discovered {len(tools)} tools:[/green]")
+            for t in tools:
+                console.print(f"  - [bold yellow]{t.get('name')}[/bold yellow]: {t.get('description', '')}")
+            client.stop()
+        except Exception as e:
+            console.print(f"[red]MCP connection test failed: {e}[/red]")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(prog="tael", description="TAEL V3: Local-First AI Creation & Research Assistant")
     parser.add_argument("--version", action="version", version=f"tael {__version__}")
@@ -303,6 +346,13 @@ def main() -> None:
     server_parser.add_argument("--host", default="127.0.0.1", help="Loopback host address (default: 127.0.0.1)")
     server_parser.add_argument("--port", type=int, default=7860, help="Port to bind (default: 7860)")
 
+    # tael mcp
+    mcp_parser = subparsers.add_parser("mcp", help="Manage and inspect external Model Context Protocol (MCP) servers")
+    mcp_sub = mcp_parser.add_subparsers(dest="mcp_action")
+    mcp_sub.add_parser("list", help="List configured MCP servers")
+    test_mcp = mcp_sub.add_parser("test", help="Test connecting to an MCP server")
+    test_mcp.add_argument("server_name", help="Name of the MCP server to test")
+
     args = parser.parse_args()
 
     config = TaelConfig.load()
@@ -319,6 +369,8 @@ def main() -> None:
         cmd_eval(config, args.category, args.export)
     elif args.command == "server":
         cmd_server(config, args.host, args.port)
+    elif args.command == "mcp":
+        cmd_mcp(config, args)
     elif args.command == "chat":
         cmd_chat(config, args.prompt)
     elif args.command == "memory":
