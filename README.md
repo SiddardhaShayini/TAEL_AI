@@ -35,7 +35,26 @@ TAEL V3 is a local-first AI software creation and research assistant designed fo
 
 ## Quickstart
 
-### 1. One-Command Setup
+### Option A: Zero-Install Standalone Executable (Recommended)
+
+No Python, Node.js, or virtual environment is required!
+
+1. Download `tael-windows-x64.exe` from [GitHub Releases](https://github.com/SiddardhaShayini/TAEL_AI/releases) (or find it in [`dist/tael.exe`](dist/tael.exe)).
+2. Start the interactive Web Studio:
+   ```powershell
+   .\tael.exe server
+   ```
+   Open `http://127.0.0.1:7860` in your browser.
+3. Or chat directly from your terminal:
+   ```powershell
+   .\tael.exe chat "Analyze the files in examples/inventory_app"
+   ```
+
+---
+
+### Option B: From Source (Developers)
+
+#### 1. One-Command Setup
 
 **Windows (PowerShell):**
 ```powershell
@@ -47,23 +66,23 @@ powershell -ExecutionPolicy Bypass -File .\setup.ps1
 bash setup.sh
 ```
 
-### 2. Verify System Health (Doctor)
+#### 2. Verify System Health (Doctor)
 ```bash
 tael doctor
 ```
 
-### 3. Run Evaluation Benchmarks
+#### 3. Run Evaluation Benchmarks
 ```bash
 tael eval
 ```
 
-### 4. Launch Local Web Studio
+#### 4. Launch Local Web Studio
 ```bash
 tael server
 ```
 Navigate to `http://127.0.0.1:7860` to access the interactive agent chat, live hardware telemetry, and registered tools.
 
-### 5. Interactive Coding Session via CLI
+#### 5. Interactive Coding Session via CLI
 ```bash
 tael chat "Create a small inventory app with offline storage and tests"
 ```
@@ -76,6 +95,7 @@ tael chat "Create a small inventory app with offline storage and tests"
 | :--- | :--- |
 | `tael chat [PROMPT]` | Start an interactive coding session or run a single prompt |
 | `tael server [--port 7860]` | Launch the local API service and interactive Web Studio dashboard |
+| `tael unload` | Evict model from RAM and terminate background `llama-server.exe` to free memory |
 | `tael status` | Show current RAM, CPU, active profile, and model backend status |
 | `tael doctor` | Run full system security and diagnostic checks |
 | `tael eval [--category ...]` | Run versioned evaluation benchmark suite and view results |
@@ -86,6 +106,14 @@ tael chat "Create a small inventory app with offline storage and tests"
 | `tael memory clear` | Clear stored memories for current project |
 | `tael research <query>` | Search the web for technical documentation and libraries |
 | `tael profile <cmd>` | Benchmark execution time and peak RAM usage of a command |
+| `tael mcp [list\|test]` | Manage and inspect external Model Context Protocol (MCP) servers |
+
+---
+
+## Reference Examples
+
+- [`examples/demo_workflow.py`](examples/demo_workflow.py) — End-to-end programmatic workflow testing hardware detection, SQLite FTS5 BM25 memory, git snapshots, multi-turn local Granite code orchestration, and pytest profiling.
+- [`examples/inventory_app/`](examples/inventory_app/) — Complete reference application with SQLite offline storage, migrations, and unit tests.
 
 ---
 
@@ -93,24 +121,30 @@ tael chat "Create a small inventory app with offline storage and tests"
 
 The official companion extension bridges your VS Code editor directly to the local TAEL AI service:
 
-1. Package the extension:
+1. Package the extension (or grab `release/tael-ai-3.0.0.vsix`):
    ```powershell
    powershell -ExecutionPolicy Bypass -File .\scripts\package_vscode.ps1
    ```
-2. Install the generated `.vsix` in VS Code (`extensions/vscode/tael-ai-3.0.0.vsix`):
-   - In VS Code, open Extensions (`Ctrl+Shift+X`).
-   - Click the `...` menu in the top-right corner.
-   - Select **Install from VSIX...** and pick `tael-ai-3.0.0.vsix`.
+2. Install the generated `.vsix` in VS Code:
+   ```powershell
+   code --install-extension release\tael-ai-3.0.0.vsix
+   ```
+   *Or in VS Code: Extensions (`Ctrl+Shift+X`) -> `...` -> **Install from VSIX...***
 3. Open the studio beside your code using `Ctrl+Shift+P` -> **TAEL AI: Open Web Studio**.
 
 ---
 
-## Standalone Windows Executable
+## Standalone Windows Executable Build
 
-To compile a portable standalone Windows executable (`dist/tael.exe`) that runs without requiring Python pre-installed:
+To compile a portable standalone Windows executable (`dist/tael.exe`) from source using PyInstaller:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\scripts\build_standalone.ps1
+```
+
+Or generate a full release bundle with SHA256 checksums:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\release.ps1
 ```
 
 ---
@@ -119,7 +153,15 @@ powershell -ExecutionPolicy Bypass -File .\scripts\build_standalone.ps1
 
 - [Quickstart Guide](docs/QUICKSTART.md) — Beginner installation and configuration
 - [Technical Architecture](docs/ARCHITECTURE.md) — Subsystem designs and security model
+- [Contributing Guide](CONTRIBUTING.md) — Development setup, guidelines, and tool creation
 - [MCP Integration Guide](docs/MCP_GUIDE.md) — Connecting external stdio MCP tools
 - [Evaluation Report](BENCHMARK_REPORT.md) — Verified benchmark suite results
 - [Full Plan](PLAN.md) — Authoritative product vision and specification
 - [Development Memory](PROJECT_MEMORY.md) — Engineering work log and project continuity
+
+---
+
+## Developer
+
+**Siddardha Shayini**  
+GitHub: [https://github.com/SiddardhaShayini](https://github.com/SiddardhaShayini)

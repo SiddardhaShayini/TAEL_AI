@@ -8,14 +8,24 @@
 
 ---
 
-## 1. Quick Installation (One-Command)
+## 1. Quick Installation
 
-### Windows (PowerShell)
+### Method A: Single-File Executable (No Python Required)
+1. Download `tael-windows-x64.exe` from [Releases](https://github.com/SiddardhaShayini/TAEL_AI/releases) or locate `dist/tael.exe`.
+2. Open terminal and run:
+   ```powershell
+   .\tael.exe server
+   ```
+   Open `http://127.0.0.1:7860` in your web browser.
+
+### Method B: From Source (Developers)
+
+#### Windows (PowerShell)
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\setup.ps1
 ```
 
-### Linux / macOS
+#### Linux / macOS
 ```bash
 bash setup.sh
 ```
@@ -48,6 +58,7 @@ TAEL is optimized to run **IBM Granite Code 3B** locally through **Ollama**:
 | :--- | :--- |
 | `tael chat [PROMPT]` | Start an interactive coding session or run a single prompt |
 | `tael server [--port 7860]` | Launch local HTTP service and interactive Web Studio dashboard |
+| `tael unload` | Evict model from RAM and terminate background `llama-server.exe` to free memory |
 | `tael status` | Show current RAM, CPU, active profile, and model backend status |
 | `tael doctor` | Run full system security and diagnostic checks |
 | `tael eval [--category ...]` | Run automated evaluation benchmark suite |

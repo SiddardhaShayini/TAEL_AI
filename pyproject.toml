@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "tael"
-version = "3.0.0a1"
+version = "3.0.0"
 description = "TAEL V3: Task-Adaptive Efficient Language AI - Local-first AI creation and research assistant"
 readme = "README.md"
 requires-python = ">=3.11"
