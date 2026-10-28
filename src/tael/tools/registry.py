@@ -42,6 +42,18 @@ def validate_schema(schema: Dict[str, Any], data: Dict[str, Any]) -> Optional[st
 
 
 class ToolRegistry:
+    ALIASES = {
+        "list_files": "list_dir",
+        "list_directory": "list_dir",
+        "read": "read_file",
+        "write": "write_file",
+        "exec": "execute_command",
+        "run_command": "execute_command",
+        "bash": "execute_command",
+        "shell": "execute_command",
+        "search": "search_files",
+    }
+
     def __init__(
         self,
         approval_manager: Optional[ApprovalManager] = None,
@@ -55,7 +67,10 @@ class ToolRegistry:
         self._tools[tool.name] = tool
 
     def get(self, name: str) -> Optional[BaseTool]:
-        return self._tools.get(name)
+        tool = self._tools.get(name)
+        if not tool and name in self.ALIASES:
+            tool = self._tools.get(self.ALIASES[name])
+        return tool
 
     def list_tools(self) -> List[BaseTool]:
         return list(self._tools.values())

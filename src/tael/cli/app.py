@@ -93,23 +93,28 @@ def cmd_chat(config: TaelConfig, initial_prompt: str = None) -> None:
         border_style="green",
     ))
 
-    if initial_prompt:
-        console.print(f"\n[bold cyan]User:[/bold cyan] {initial_prompt}\n")
-        orchestrator.execute_task(initial_prompt, session=session, progress=progress)
+    try:
+        if initial_prompt:
+            console.print(f"\n[bold cyan]User:[/bold cyan] {initial_prompt}\n")
+            orchestrator.execute_task(initial_prompt, session=session, progress=progress)
 
-    while True:
-        try:
-            user_input = console.input("\n[bold cyan]tael>[/bold cyan] ").strip()
-            if not user_input:
-                continue
-            if user_input.lower() in ("exit", "quit", "q"):
-                console.print("[dim]Goodbye![/dim]")
+        while True:
+            try:
+                user_input = console.input("\n[bold cyan]tael>[/bold cyan] ").strip()
+                if not user_input:
+                    continue
+                if user_input.lower() in ("exit", "quit", "q"):
+                    console.print("[dim]Goodbye![/dim]")
+                    break
+
+                orchestrator.execute_task(user_input, session=session, progress=progress)
+            except (KeyboardInterrupt, EOFError):
+                console.print("\n[dim]Session ended.[/dim]")
                 break
-
-            orchestrator.execute_task(user_input, session=session, progress=progress)
-        except (KeyboardInterrupt, EOFError):
-            console.print("\n[dim]Session ended.[/dim]")
-            break
+    finally:
+        # Free model RAM and terminate background llama runner on chat exit
+        runtime = ModelRuntimeManager(config.model)
+        runtime.unload_model()
 
 
 def cmd_memory(config: TaelConfig, args: argparse.Namespace) -> None:
@@ -254,7 +259,22 @@ def cmd_server(config: TaelConfig, host: str = "127.0.0.1", port: int = 7860) ->
         f"Press [bold red]Ctrl+C[/bold red] to stop.",
         border_style="green",
     ))
-    uvicorn.run(app, host=host, port=port, log_level="info")
+    try:
+        uvicorn.run(app, host=host, port=port, log_level="info")
+    finally:
+        console.print("[dim]Stopping server and freeing model RAM...[/dim]")
+        runtime = ModelRuntimeManager(config.model)
+        runtime.unload_model()
+
+
+def cmd_unload(config: TaelConfig) -> None:
+    console.print(f"[bold cyan]Evicting model '{config.model.model_name}' from memory...[/bold cyan]")
+    runtime = ModelRuntimeManager(config.model)
+    ok = runtime.unload_model()
+    if ok:
+        console.print("[bold green]Success:[/bold green] Model unloaded and background llama runner terminated. RAM fully reclaimed.")
+    else:
+        console.print("[yellow]Notice:[/yellow] Model is already unloaded or Ollama offline.")
 
 
 def cmd_mcp(config: TaelConfig, args: argparse.Namespace) -> None:
@@ -346,6 +366,9 @@ def main() -> None:
     server_parser.add_argument("--host", default="127.0.0.1", help="Loopback host address (default: 127.0.0.1)")
     server_parser.add_argument("--port", type=int, default=7860, help="Port to bind (default: 7860)")
 
+    # tael unload
+    subparsers.add_parser("unload", help="Evict model from RAM and terminate background llama runner to free memory")
+
     # tael mcp
     mcp_parser = subparsers.add_parser("mcp", help="Manage and inspect external Model Context Protocol (MCP) servers")
     mcp_sub = mcp_parser.add_subparsers(dest="mcp_action")
@@ -369,6 +392,8 @@ def main() -> None:
         cmd_eval(config, args.category, args.export)
     elif args.command == "server":
         cmd_server(config, args.host, args.port)
+    elif args.command == "unload":
+        cmd_unload(config)
     elif args.command == "mcp":
         cmd_mcp(config, args)
     elif args.command == "chat":

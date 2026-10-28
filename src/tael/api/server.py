@@ -1,4 +1,5 @@
 import asyncio
+from contextlib import asynccontextmanager
 import json
 import queue
 import threading
@@ -51,10 +52,22 @@ class StreamingProgress(OrchestratorProgress):
 
 def create_app(config: Optional[TaelConfig] = None) -> FastAPI:
     cfg = config or TaelConfig.load()
+
+    @asynccontextmanager
+    async def lifespan(fastapi_app: FastAPI):
+        yield
+        # Server shutdown: evict model and terminate background llama.cpp runner to free RAM
+        try:
+            runtime = ModelRuntimeManager(cfg.model)
+            runtime.unload_model()
+        except Exception:
+            pass
+
     app = FastAPI(
         title="TAEL AI Local Service",
         description="Local-first agent orchestrator and memory API",
         version=__version__,
+        lifespan=lifespan,
     )
 
     # Active in-memory sessions
@@ -155,11 +168,16 @@ def create_app(config: Optional[TaelConfig] = None) -> FastAPI:
 </head>
 <body>
   <div class="container">
-    <div class="header">
-      <img src="/logo.svg" alt="TAEL AI Logo" />
+    <div class="header" style="display:flex; justify-content:space-between; align-items:center;">
+      <div style="display:flex; align-items:center; gap:16px;">
+        <img src="/logo.svg" alt="TAEL AI Logo" />
+        <div>
+          <h1>TAEL AI Studio (v{__version__})</h1>
+          <p class="tagline">Task-Adaptive Efficient Language AI &mdash; Capable local AI, built for everyday hardware.</p>
+        </div>
+      </div>
       <div>
-        <h1>TAEL AI Studio (v{__version__})</h1>
-        <p class="tagline">Task-Adaptive Efficient Language AI &mdash; Capable local AI, built for everyday hardware.</p>
+        <button id="unload-btn" onclick="unloadModel()" class="btn btn-outline" style="border-color:#ff6b6b; color:#ff6b6b; font-size:12px; padding:6px 12px; cursor:pointer;" title="Evict model from memory and stop background llama.cpp runner to reclaim RAM">&#9888; Free RAM (Unload Model)</button>
       </div>
     </div>
 
@@ -353,6 +371,27 @@ def create_app(config: Optional[TaelConfig] = None) -> FastAPI:
         history.scrollTop = history.scrollHeight;
       }}
     }}
+
+    async function unloadModel() {{
+      const btn = document.getElementById('unload-btn');
+      const originalText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerText = 'Unloading...';
+      try {{
+        const res = await fetch('/model/unload', {{ method: 'POST' }});
+        const data = await res.json();
+        if (data.success) {{
+          alert('Model successfully evicted from memory. RAM reclaimed!');
+        }} else {{
+          alert('No model in RAM or already unloaded.');
+        }}
+      }} catch (e) {{
+        alert('Unload request failed: ' + e.message);
+      }} finally {{
+        btn.disabled = false;
+        btn.innerHTML = originalText;
+      }}
+    }}
   </script>
 </body>
 </html>"""
@@ -419,6 +458,19 @@ def create_app(config: Optional[TaelConfig] = None) -> FastAPI:
                 "installed_models": installed,
             },
         }
+
+    @app.post("/model/unload", dependencies=[Depends(verify_auth)])
+    def unload_model():
+        """Explicitly evict the active model from RAM and terminate background llama-server."""
+        runtime = ModelRuntimeManager(cfg.model)
+        ok = runtime.unload_model()
+        return {"success": ok, "model": cfg.model.model_name}
+
+    @app.get("/model/loaded", dependencies=[Depends(verify_auth)])
+    def get_loaded_models():
+        """List models currently resident in RAM/VRAM."""
+        runtime = ModelRuntimeManager(cfg.model)
+        return runtime.list_loaded_models()
 
     class CreateSessionRequest(BaseModel):
         workspace_root: Optional[str] = None
