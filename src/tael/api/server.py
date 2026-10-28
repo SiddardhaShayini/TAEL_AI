@@ -472,11 +472,11 @@ def create_app(config: Optional[TaelConfig] = None) -> FastAPI:
             yield f"event: start\ndata: {json.dumps({'session_id': session_id})}\n\n"
             while True:
                 try:
-                    item = await asyncio.to_thread(event_queue.get, timeout=0.1)
+                    item = event_queue.get_nowait()
                 except queue.Empty:
                     if not worker.is_alive() and event_queue.empty():
                         break
-                    await asyncio.sleep(0.02)
+                    await asyncio.sleep(0.05)
                     continue
 
                 if item is None:

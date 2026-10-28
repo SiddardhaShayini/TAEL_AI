@@ -22,8 +22,24 @@ Core operating rules:
 3. Be concise, precise, and practical.
 4. When you have finished the user's task or answered their question, provide a concise summary of what was accomplished and how it was verified.
 
+{tools_context}
+
 {memory_context}
 """
+
+
+def format_tools_prompt(schemas: List[Dict[str, Any]]) -> str:
+    """Format tool signatures into the system prompt for local models without native tool calling metadata."""
+    lines = ["Available workspace tools:"]
+    for s in schemas:
+        props = s.get("parameters", {}).get("properties", {})
+        params = [f"{k}: {v.get('type', 'any')}" for k, v in props.items()]
+        sig = f"{s['name']}({', '.join(params)})"
+        lines.append(f"- {sig}: {s.get('description', '')}")
+    lines.append("\nTo invoke a tool, output a JSON block:")
+    lines.append('```json\n{"tool": "<tool_name>", "args": {<arguments>}}\n```')
+    lines.append("You will receive the tool output in the next turn to finish your work.")
+    return "\n".join(lines)
 
 
 class OrchestratorProgress:
@@ -74,13 +90,16 @@ class TaskOrchestrator:
         memory_result = self.memory_retriever.retrieve_for_task(user_request)
         memory_snippet = self.memory_retriever.format_context_prompt(memory_result)
 
-        system_prompt = SYSTEM_PROMPT_TEMPLATE.format(memory_context=memory_snippet)
+        tool_schemas = self.tools.get_schemas()
+        tools_prompt = format_tools_prompt(tool_schemas)
+        system_prompt = SYSTEM_PROMPT_TEMPLATE.format(
+            tools_context=tools_prompt,
+            memory_context=memory_snippet,
+        )
         if not session.messages:
             session.add_message(LLMMessage(role="system", content=system_prompt))
         
         session.add_message(LLMMessage(role="user", content=user_request))
-
-        tool_schemas = self.tools.get_schemas()
         turns = 0
         final_answer = ""
         tools_executed = []

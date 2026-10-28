@@ -116,17 +116,24 @@ class OllamaClient(LLMClient):
                 # Text-based tool extraction fallback for models without native tool calling
                 if not tool_calls and content:
                     import re
-                    pattern = r"```(?:json)?\s*(\{\s*\"tool\"\s*:\s*\"[^\"]+\".*?\})\s*```"
-                    call_match = re.search(pattern, content, re.DOTALL)
-                    if call_match:
-                        try:
-                            parsed = json.loads(call_match.group(1))
-                            tname = parsed.get("tool")
-                            targs = parsed.get("args") or parsed.get("arguments") or {}
-                            if tname:
-                                tool_calls.append(ToolCall(name=tname, arguments=targs))
-                        except Exception:
-                            pass
+                    patterns = [
+                        r"```(?:json)?\s*(\{\s*\"tool\"\s*:\s*\"[^\"]+\".*?\})\s*```",
+                        r"<tool_call>\s*(\{\s*\"tool\"\s*:\s*\"[^\"]+\".*?\})\s*</tool_call>",
+                        r"(\{\s*\"tool\"\s*:\s*\"[^\"]+\"\s*,\s*\"args\"\s*:\s*\{.*?\}\s*\})",
+                        r"(\{\s*\"name\"\s*:\s*\"[^\"]+\"\s*,\s*\"arguments\"\s*:\s*\{.*?\}\s*\})",
+                    ]
+                    for pat in patterns:
+                        call_match = re.search(pat, content, re.DOTALL)
+                        if call_match:
+                            try:
+                                parsed = json.loads(call_match.group(1))
+                                tname = parsed.get("tool") or parsed.get("name")
+                                targs = parsed.get("args") or parsed.get("arguments") or {}
+                                if tname:
+                                    tool_calls.append(ToolCall(name=tname, arguments=targs))
+                                    break
+                            except Exception:
+                                pass
 
                 return LLMResponse(
                     content=content,

@@ -10,7 +10,7 @@ class ModelRuntimeError(Exception):
 
 
 class ModelRuntimeManager:
-    """Manages local model runtime lifecycle, health checks, and safety checks."""
+    """Manages local model runtime lifecycle, health checks, model eviction, and safety checks."""
 
     def __init__(self, config: ModelConfig):
         self.config = config
@@ -56,3 +56,35 @@ class ModelRuntimeManager:
         target = model_name or self.config.model_name
         installed = self.list_installed_models()
         return any(target in m for m in installed)
+
+    def list_loaded_models(self) -> List[Dict[str, Any]]:
+        """List models currently loaded in RAM/VRAM by Ollama."""
+        if self.config.backend == "mock":
+            return []
+        try:
+            with httpx.Client(timeout=3.0) as client:
+                res = client.get(f"{self.config.endpoint}/api/ps")
+                if res.status_code == 200:
+                    return res.json().get("models", [])
+                return []
+        except Exception:
+            return []
+
+    def unload_model(self, model_name: Optional[str] = None) -> bool:
+        """
+        Explicitly unload model from RAM and terminate Ollama's background llama.cpp runner.
+        Crucial for everyday 8GB RAM laptops to reclaim memory immediately.
+        """
+        if self.config.backend == "mock":
+            return True
+        target = model_name or self.config.model_name
+        try:
+            with httpx.Client(timeout=5.0) as client:
+                # Setting keep_alive: 0 signals Ollama to immediately evict the model from memory
+                res = client.post(
+                    f"{self.config.endpoint}/api/generate",
+                    json={"model": target, "keep_alive": 0},
+                )
+                return res.status_code == 200
+        except Exception:
+            return False
