@@ -345,3 +345,27 @@ This file is development continuity for the people and agents building TAEL V3. 
     - Optimized SSE streaming generator to use non-blocking `event_queue.get_nowait()` and `asyncio.sleep(0.05)` yielding prompt responses.
 - Validation: 31/31 unit & integration tests passed in 1.86s. `tael doctor` passed all 6/6 diagnostics (`PASS`). Live `examples/demo_workflow.py` ran to completion with exit code 0 and confirmed zero lingering `llama.cpp` runner.
 - Next step: stage, commit, and push updates to GitHub remote `origin/main`.
+
+
+### 2026-10-28 12:30 (+05:30)
+
+- Addressed standalone binary test feedback, Granite 3B tool calling, release packaging, and documentation:
+  - Fixed Standalone Executable File Creation in CLI & Web Studio:
+    - Root cause 1: `format_tools_prompt()` lacked few-shot demonstrations for small local models like IBM Granite 3B, causing it to respond conversationally rather than generating `<tool_call>` JSON.
+    - Root cause 2: `json.loads()` failed with `JSONDecodeError: Invalid control character` when models produced multiline text without strict JSON escaping. Added `strict=False` and regex whitespace sanitization in `src/tael/models/client.py`.
+    - Root cause 3: Added automatic fallback `_extract_implicit_file_action()` in `src/tael/core/orchestrator.py` that parses markdown/code blocks when user prompt requests file creation, synthesizing a `write_file` tool invocation if model omits the `<tool_call>` wrapper.
+    - Root cause 4: Added tool call deduplication in `execute_task()` to prevent repetitive execution loops.
+    - Verified in external test folder `D:\zzz`: `tael-windows-x64.exe chat "create a .md file and write about Agentic AI"` successfully created `D:\zzz\agentic_ai.md` (1,087 bytes) and `D:\zzz\quantum_computing.md` (505 bytes).
+  - Enhanced Release Packaging & GitHub Workflow:
+    - Updated `scripts/release.ps1` and `.github/workflows/release.yml` to package and publish both `tael.exe` and `tael-windows-x64.exe` aliases alongside `tael-ai-3.0.0.vsix` and `SHA256SUMS.txt`.
+    - Added `launch_studio.bat` in the repository root for one-click double-click launch on Windows.
+  - Documentation and Attribution Updates:
+    - Added comprehensive `CONTRIBUTING.md` covering architecture, setup, testing, code style, and step-by-step instructions for adding custom tools.
+    - Updated `README.md` and `docs/QUICKSTART.md` correcting commands to `.\tael-windows-x64.exe server` (or rename to `tael.exe`), documenting `tael unload`, and adding developer attribution:
+      ```markdown
+      ## Developer
+      **Siddardha Shayini**
+      GitHub: https://github.com/SiddardhaShayini
+      ```
+  - Validation: 31/31 unit & integration tests passing (`pytest`). Recompiled standalone binary `dist/tael.exe` (19.07 MB) and release package tested successfully in `D:\zzz`.
+  - Next step: commit, tag `v3.0.0`, and push to GitHub `origin/main`.

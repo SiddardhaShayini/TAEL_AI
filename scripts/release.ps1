@@ -37,9 +37,10 @@ Write-Host "`n[Step 3/4] Building standalone Windows executable..." -ForegroundC
 & powershell -ExecutionPolicy Bypass -File ".\scripts\build_standalone.ps1" -Clean
 $ExeFile = Join-Path $WorkspaceRoot "dist\tael.exe"
 if (Test-Path $ExeFile) {
-    $TargetExe = Join-Path $ReleaseDir "tael-v3.0.0-windows-x64.exe"
-    Copy-Item $ExeFile $TargetExe
-    Write-Host "Copied to $TargetExe" -ForegroundColor Green
+    Copy-Item $ExeFile (Join-Path $ReleaseDir "tael-v3.0.0-windows-x64.exe")
+    Copy-Item $ExeFile (Join-Path $ReleaseDir "tael-windows-x64.exe")
+    Copy-Item $ExeFile (Join-Path $ReleaseDir "tael.exe")
+    Write-Host "Copied executables (tael.exe, tael-windows-x64.exe) to release\" -ForegroundColor Green
 }
 
 # 4. Generate SHA256 Checksums

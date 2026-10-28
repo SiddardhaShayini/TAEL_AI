@@ -11,11 +11,12 @@
 ## 1. Quick Installation
 
 ### Method A: Single-File Executable (No Python Required)
-1. Download `tael-windows-x64.exe` from [Releases](https://github.com/SiddardhaShayini/TAEL_AI/releases) or locate `dist/tael.exe`.
-2. Open terminal and run:
+1. Download **`tael-windows-x64.exe`** from [GitHub Releases](https://github.com/SiddardhaShayini/TAEL_AI/releases).
+2. Open terminal in your download directory and run:
    ```powershell
-   .\tael.exe server
+   .\tael-windows-x64.exe server
    ```
+   *(Or rename to `tael.exe` and run `.\tael.exe server`)*  
    Open `http://127.0.0.1:7860` in your web browser.
 
 ### Method B: From Source (Developers)

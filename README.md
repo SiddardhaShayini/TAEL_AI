@@ -39,15 +39,16 @@ TAEL V3 is a local-first AI software creation and research assistant designed fo
 
 No Python, Node.js, or virtual environment is required!
 
-1. Download `tael-windows-x64.exe` from [GitHub Releases](https://github.com/SiddardhaShayini/TAEL_AI/releases) (or find it in [`dist/tael.exe`](dist/tael.exe)).
+1. Download **`tael-windows-x64.exe`** from [GitHub Releases](https://github.com/SiddardhaShayini/TAEL_AI/releases).
 2. Start the interactive Web Studio:
    ```powershell
-   .\tael.exe server
+   .\tael-windows-x64.exe server
    ```
+   *(Tip: You can also rename `tael-windows-x64.exe` to `tael.exe` and run `.\tael.exe server`)*  
    Open `http://127.0.0.1:7860` in your browser.
 3. Or chat directly from your terminal:
    ```powershell
-   .\tael.exe chat "Analyze the files in examples/inventory_app"
+   .\tael-windows-x64.exe chat "create a .md file and write about Agentic AI"
    ```
 
 ---

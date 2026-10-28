@@ -125,15 +125,24 @@ class OllamaClient(LLMClient):
                     for pat in patterns:
                         call_match = re.search(pat, content, re.DOTALL)
                         if call_match:
+                            raw_json = call_match.group(1)
+                            parsed = None
                             try:
-                                parsed = json.loads(call_match.group(1))
+                                parsed = json.loads(raw_json, strict=False)
+                            except Exception:
+                                try:
+                                    # Fallback: remove control characters that break JSON strings
+                                    clean = re.sub(r'[\x00-\x1f\x7f-\x9f]', lambda m: '\\n' if m.group(0) == '\n' else '\\t' if m.group(0) == '\t' else '', raw_json)
+                                    parsed = json.loads(clean, strict=False)
+                                except Exception:
+                                    pass
+
+                            if parsed:
                                 tname = parsed.get("tool") or parsed.get("name")
                                 targs = parsed.get("args") or parsed.get("arguments") or {}
                                 if tname:
                                     tool_calls.append(ToolCall(name=tname, arguments=targs))
                                     break
-                            except Exception:
-                                pass
 
                 return LLMResponse(
                     content=content,
