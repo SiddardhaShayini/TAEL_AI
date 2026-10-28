@@ -93,3 +93,12 @@ async def test_api_endpoints(tmp_path: Path):
         body_text = res_stream.text
         assert "event: start" in body_text
         assert "event: done" in body_text
+
+        # 11. Model unload & loaded inspection
+        res_loaded = await client.get("/model/loaded")
+        assert res_loaded.status_code == 200
+        assert isinstance(res_loaded.json(), list)
+
+        res_unload = await client.post("/model/unload")
+        assert res_unload.status_code == 200
+        assert res_unload.json()["success"] is True

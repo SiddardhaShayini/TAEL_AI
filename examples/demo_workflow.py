@@ -62,8 +62,9 @@ def run_demo():
         for r in search_results:
             print(f"   - Match: [{r.category.value}] {r.title} (Verified: {r.verified})")
 
-        # 3. Create Safety Checkpoint
-        snapshot_mgr = SnapshotManager(config.workspace_root)
+        # 3. Create Safety Checkpoint on reference inventory application
+        inventory_dir = str(Path(config.workspace_root) / "examples" / "inventory_app")
+        snapshot_mgr = SnapshotManager(inventory_dir)
         chk = snapshot_mgr.create_checkpoint("Before running demo inventory task")
         print(f"\n3. Created Safety Checkpoint: {chk.id} ({chk.description})")
 

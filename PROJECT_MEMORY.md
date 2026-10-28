@@ -323,3 +323,25 @@ This file is development continuity for the people and agents building TAEL V3. 
   - Added unit test `tests/test_examples.py` (total 31 unit tests passing in 2.0s).
 - Validation: all 31 tests passing (`pytest`). Live `examples/demo_workflow.py` ran end-to-end on real hardware and completed with exit code 0.
 - Next step: stage, commit, and push changes to GitHub `origin/main`.
+
+
+### 2026-10-28 11:20 (+05:30)
+
+- Hardened local memory reclamation, model eviction, and terminal demo workflow:
+  - Diagnosed and resolved terminal demo issues in `examples/demo_workflow.py`:
+    - Resolved `KeyError: 'status'` by returning `"status": "completed"` in `TaskOrchestrator.execute_task` and using safe `.get("status", "completed")` in caller scripts.
+    - Added comprehensive tool aliases in `ToolRegistry` (`list_files` -> `list_dir`, `run_command` -> `execute_command`, `exec` -> `execute_command`, `search` -> `search_files`) so local models invoking common alternate tool names execute reliably without failures.
+    - Prevented duplicate memory entries on repeated runs of `demo_workflow.py` by checking existing titles before insertion.
+    - Scoped `SnapshotManager` in the demo to `examples/inventory_app` to keep root repository git commit history clean.
+  - Eliminated lingering background `llama.cpp` runner (`llama-server.exe`) to reclaim RAM on 8GB/16GB machines:
+    - Added `unload_model()` and `list_loaded_models()` to `ModelRuntimeManager` in `src/tael/models/runtime.py` leveraging Ollama's `keep_alive: 0` eviction protocol.
+    - Integrated automatic model eviction on server shutdown via FastAPI `lifespan` context manager in `src/tael/api/server.py`.
+    - Added `POST /model/unload` and `GET /model/loaded` API endpoints with interactive "Free RAM (Unload Model)" button in the Web Studio header.
+    - Added `tael unload` CLI command for instant one-line RAM reclamation.
+    - Wrapped `cmd_server()`, `cmd_chat()`, and `demo_workflow.py` in `finally:` blocks that automatically call `runtime.unload_model()`.
+    - Verified via Windows `Win32_Process` query that `llama-server.exe` is cleanly terminated with zero lingering background memory footprint.
+  - Test suite enhancements in `tests/test_api.py`:
+    - Added test assertions for `/model/loaded` and `/model/unload`.
+    - Optimized SSE streaming generator to use non-blocking `event_queue.get_nowait()` and `asyncio.sleep(0.05)` yielding prompt responses.
+- Validation: 31/31 unit & integration tests passed in 1.86s. `tael doctor` passed all 6/6 diagnostics (`PASS`). Live `examples/demo_workflow.py` ran to completion with exit code 0 and confirmed zero lingering `llama.cpp` runner.
+- Next step: stage, commit, and push updates to GitHub remote `origin/main`.
